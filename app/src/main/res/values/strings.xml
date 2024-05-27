@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">xyFileShareTool</string>
+    <string name="scan_barcode" translatable="false">Scan barcode</string>
+</resources>
