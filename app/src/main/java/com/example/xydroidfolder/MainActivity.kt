@@ -1,5 +1,6 @@
 package com.example.xydroidfolder
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.xydroidfolder.ui.theme.XyDroidFolderATheme
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanCustomCode
@@ -34,16 +38,33 @@ class MainActivity : ComponentActivity() {
             XyDroidFolderATheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     GetQRCodeExample(
+                        StartFileService = { StartFileService(it) },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
     }
+
+    private fun StartFileService(pcAddr: String){
+        var intent: Intent = Intent(this, XyFileService::class.java);
+        intent.putExtra("key", pcAddr);
+        startService(Intent(intent))
+    }
 }
 
 @Composable
-fun GetQRCodeExample(modifier: Modifier = Modifier) {
+fun GetQRCodeExample(
+    viewModel: MainViewModel = viewModel(),
+    StartFileService: (String) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val isServiceRunning by viewModel.IsRunningStateFlow.collectAsStateWithLifecycle(
+        //Dealing with exception: CompositionLocal LocalLifecycleOwner not present
+        //3. Manually Pass `LocalLifecycleOwner`
+        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    )
+
     var scanQrCodeInfo by remember { mutableStateOf<String?>("...") }
     val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
     { result ->
@@ -51,6 +72,7 @@ fun GetQRCodeExample(modifier: Modifier = Modifier) {
         when(result){
             is QRResult.QRSuccess -> {
                 scanQrCodeInfo=result.content.rawValue;
+                scanQrCodeInfo?.let { StartFileService(it) }
             }
             is QRResult.QRUserCanceled -> {
                 scanQrCodeInfo="QRUserCanceled";
@@ -77,8 +99,8 @@ fun GetQRCodeExample(modifier: Modifier = Modifier) {
             Text(stringResource(R.string.scan_barcode));
         }
         Text(scanQrCodeInfo?:"...");
+        Text(if(isServiceRunning) "Service is Running" else "Service not Running");
     }
-
 }
 
 @Preview(showBackground = true)
