@@ -8,10 +8,26 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Process
+import android.util.Log
+import com.example.xydroidfolder.comm.CommData
+import com.example.xydroidfolder.comm.XyCommCmd
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 class XyFileService : Service()  {
+    val tAG: String = "XyFileService"
+
+    private val job = SupervisorJob()
+    private val receiveScope = CoroutineScope(Dispatchers.IO + job)
+
     companion object {
         var isRunning: Boolean = false
 
@@ -30,7 +46,57 @@ class XyFileService : Service()  {
             // Normally we would do some work here, like download a file.
             // For our sample, we just sleep for 5 seconds.
             try {
-                Thread.sleep(5000)
+                val intent: Intent = msg.obj as Intent
+                val pcAddress: String = intent.getStringExtra("key")!!
+
+                Log.d(tAG, "sending packet:")
+                val cmdParDic = mutableMapOf<String, String>()
+                cmdParDic["remoteIP"] = "192.168.3.119"
+                cmdParDic["remoteChatPort"] = "12921"
+                cmdParDic["remoteStreamPort"] = "12922"
+                cmdParDic["hostName"] = "Pixel 7"
+                val commData = CommData(
+                    XyCommCmd.PassiveRegist,
+                    cmdParDic)
+                val sendBateArray: ByteArray = commData.toCommPkgBytes()
+                Log.d(tAG, commData.toCommPkgString())
+
+                Log.d(tAG, "Ip: " + InetAddress.getByName(pcAddress.split(":")[0]))
+                Log.d(tAG, "Port: " +pcAddress.split(":")[1])
+
+                val socket = DatagramSocket()
+                val sendPacket = DatagramPacket(
+                    sendBateArray,
+                    sendBateArray.size,
+                    InetAddress.getByName(pcAddress.split(":")[0]),
+                    pcAddress.split(":")[1].toInt())
+
+                socket.send(sendPacket)
+                socket.close()
+                Log.d(tAG, "sent packet")
+
+                val receiveBuffer = ByteArray(1024)
+                val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
+
+//                val listenerSocket = DatagramSocket(
+//                    12921,
+//                    InetAddress.getByName("0.0.0.0"))
+                val listenerSocket = DatagramSocket(
+                    InetSocketAddress("192.168.3.119", 12921))
+                Log.d(tAG, "start receive ...")
+                listenerSocket.receive(receivePacket)
+                Log.d(tAG, "end receive")
+                Log.d(tAG, "received: "
+                        + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
+
+                receiveScope.launch {
+                    while(isRunning){
+                        listenerSocket.receive(receivePacket)
+                        Log.d(tAG, "received: "
+                                + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
+
+                    }
+                }
             } catch (e: InterruptedException) {
                 // Restore interrupt status.
                 Thread.currentThread().interrupt()
@@ -65,6 +131,7 @@ class XyFileService : Service()  {
         // start ID so we know which request we're stopping when we finish the job
         serviceHandler?.obtainMessage()?.also { msg ->
             msg.arg1 = startId
+            msg.obj = intent
             serviceHandler?.sendMessage(msg)
         }
 
