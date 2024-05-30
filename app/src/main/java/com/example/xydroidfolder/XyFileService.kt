@@ -2,14 +2,12 @@ package com.example.xydroidfolder
 
 import android.app.Service
 import android.content.Intent
-import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Process
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -74,19 +72,9 @@ class XyFileService : Service()  {
         return START_STICKY
     }
 
-    // Binder given to clients.
-    private val binder = LocalBinder()
-    /**
-     * Class used for the client Binder. Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with IPC.
-     */
-    inner class LocalBinder : Binder() {
-        // Return this instance of LocalService so clients can call public methods.
-        fun getService(): XyFileService = this@XyFileService
-    }
     override fun onBind(intent: Intent): IBinder? {
         // We don't provide binding, so return null
-        return binder
+        return null
     }
 
     override fun onDestroy() {

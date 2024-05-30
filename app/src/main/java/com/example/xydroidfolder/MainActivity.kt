@@ -14,7 +14,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,7 +37,7 @@ class MainActivity : ComponentActivity() {
             XyDroidFolderATheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     GetQRCodeExample(
-                        StartFileService = { StartFileService(it) },
+                        startFileService = { startFileService(it) },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -46,20 +45,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun StartFileService(pcAddr: String){
-        var intent: Intent = Intent(this, XyFileService::class.java);
-        intent.putExtra("key", pcAddr);
+    private fun startFileService(pcAddress: String){
+        val intent = Intent(this, XyFileService::class.java)
+        intent.putExtra("key", pcAddress)
         startService(Intent(intent))
     }
 }
 
 @Composable
 fun GetQRCodeExample(
+    modifier: Modifier = Modifier,
     viewModel: MainViewModel = viewModel(),
-    StartFileService: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    startFileService: (String) -> Unit = {}
 ) {
-    val isServiceRunning by viewModel.IsRunningStateFlow.collectAsStateWithLifecycle(
+    val isServiceRunning by viewModel.isRunningStateFlow.collectAsStateWithLifecycle(
         //Dealing with exception: CompositionLocal LocalLifecycleOwner not present
         //3. Manually Pass `LocalLifecycleOwner`
         lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
@@ -71,17 +70,17 @@ fun GetQRCodeExample(
         // handle QRResult
         when(result){
             is QRResult.QRSuccess -> {
-                scanQrCodeInfo=result.content.rawValue;
-                scanQrCodeInfo?.let { StartFileService(it) }
+                scanQrCodeInfo=result.content.rawValue
+                scanQrCodeInfo?.let { startFileService(it) }
             }
             is QRResult.QRUserCanceled -> {
-                scanQrCodeInfo="QRUserCanceled";
+                scanQrCodeInfo="QRUserCanceled"
             }
             is QRResult.QRMissingPermission  -> {
-                scanQrCodeInfo="QRMissingPermission";
+                scanQrCodeInfo="QRMissingPermission"
             }
             is QRResult.QRError -> {
-                scanQrCodeInfo="QRError";
+                scanQrCodeInfo="QRError"
             }
         }
     }
@@ -96,10 +95,10 @@ fun GetQRCodeExample(
                 setOverlayStringRes(R.string.scan_barcode) // string resource used for the scanner overlay
             })
         }) {
-            Text(stringResource(R.string.scan_barcode));
+            Text(stringResource(R.string.scan_barcode))
         }
-        Text(scanQrCodeInfo?:"...");
-        Text(if(isServiceRunning) "Service is Running" else "Service not Running");
+        Text(scanQrCodeInfo?:"...")
+        Text(if(isServiceRunning) "Service is Running" else "Service not Running")
     }
 }
 
