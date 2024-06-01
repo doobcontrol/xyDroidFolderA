@@ -9,6 +9,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Process
 import android.util.Log
+import com.example.xydroidfolder.comm.CmdPar
 import com.example.xydroidfolder.comm.CommData
 import com.example.xydroidfolder.comm.XyCommCmd
 import kotlinx.coroutines.CoroutineScope
@@ -50,13 +51,12 @@ class XyFileService : Service()  {
                 val pcAddress: String = intent.getStringExtra("key")!!
 
                 Log.d(tAG, "sending packet:")
-                val cmdParDic = mutableMapOf<String, String>()
-                cmdParDic["remoteIP"] = "192.168.3.119"
-                cmdParDic["remoteChatPort"] = "12921"
-                cmdParDic["remoteStreamPort"] = "12922"
-                cmdParDic["hostName"] = "Pixel 7"
+                val cmdParDic = mutableMapOf<CmdPar, String>()
+                cmdParDic[CmdPar.ip] = "192.168.3.119"
+                cmdParDic[CmdPar.port] = "12921"
+                cmdParDic[CmdPar.hostName] = "Pixel 7"
                 val commData = CommData(
-                    XyCommCmd.PassiveRegist,
+                    XyCommCmd.Register,
                     cmdParDic)
                 val sendBateArray: ByteArray = commData.toCommPkgBytes()
                 Log.d(tAG, commData.toCommPkgString())
