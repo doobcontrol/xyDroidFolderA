@@ -3,13 +3,34 @@ package com.example.xydroidfolder.comm
 import java.util.UUID
 
 class CommData(
-    val cmd: XyCommCmd,
+    val cmd: DroidFolderCmd,
     val cmdParDic: MutableMap<CmdPar, String> = mutableMapOf()
 ) {
+    companion object {
+        fun fromCommPkgString(pkgString: String): CommData {
+            var cmd: DroidFolderCmd = DroidFolderCmd.NONE
+            val cmdParDic: MutableMap<CmdPar, String> = mutableMapOf()
+
+            val paramList = pkgString.split(",")
+            paramList.forEach {
+                val param = it.split("=")
+                val key = param[0]
+                val value = param[1]
+                if(key == CmdPar.cmd.name) cmd = DroidFolderCmd.valueOf(value)
+                else{
+                    cmdParDic[CmdPar.valueOf(key)] = value
+                }
+            }
+
+            return CommData(
+                cmd=cmd,
+                cmdParDic=cmdParDic)
+        }
+    }
 
     val cmdID: String = UUID.randomUUID().toString()
 
-    fun toCommDic(): MutableMap<CmdPar, String> {
+    private fun toCommDic(): MutableMap<CmdPar, String> {
         val commDic = cmdParDic.toMutableMap()
         commDic[CmdPar.cmdID] = cmdID
         commDic[CmdPar.cmd] = cmd.name
@@ -29,24 +50,4 @@ class CommData(
     fun toCommPkgBytes(): ByteArray {
         return toCommPkgString().toByteArray()
     }
-}
-
-enum class XyCommCmd {
-    Register
-}
-enum class CmdPar {
-    cmd,
-    cmdID,
-    cmdSucceed,
-    ip,
-    port,
-    hostName,
-    requestPath,
-    targetFile,
-    fileLength,
-    streamReceiverPar,
-    folders,
-    files,
-    returnMsg,
-    errorMsg
 }

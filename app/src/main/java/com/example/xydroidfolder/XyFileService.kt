@@ -11,7 +11,8 @@ import android.os.Process
 import android.util.Log
 import com.example.xydroidfolder.comm.CmdPar
 import com.example.xydroidfolder.comm.CommData
-import com.example.xydroidfolder.comm.XyCommCmd
+import com.example.xydroidfolder.comm.DroidFolderCmd
+import com.example.xydroidfolder.comm.DroidFolderComm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +30,7 @@ class XyFileService : Service()  {
     private val job = SupervisorJob()
     private val receiveScope = CoroutineScope(Dispatchers.IO + job)
 
+    private var droidFolderComm: DroidFolderComm? = null
     companion object {
         var isRunning: Boolean = false
 
@@ -50,53 +52,22 @@ class XyFileService : Service()  {
                 val intent: Intent = msg.obj as Intent
                 val pcAddress: String = intent.getStringExtra("key")!!
 
-                Log.d(tAG, "sending packet:")
-                val cmdParDic = mutableMapOf<CmdPar, String>()
-                cmdParDic[CmdPar.ip] = "192.168.3.119"
-                cmdParDic[CmdPar.port] = "12921"
-                cmdParDic[CmdPar.hostName] = "Pixel 7"
-                val commData = CommData(
-                    XyCommCmd.Register,
-                    cmdParDic)
-                val sendBateArray: ByteArray = commData.toCommPkgBytes()
-                Log.d(tAG, commData.toCommPkgString())
+                val pcIp = pcAddress.split(":")[0];
+                val pcPort = pcAddress.split(":")[1];
 
-                Log.d(tAG, "Ip: " + InetAddress.getByName(pcAddress.split(":")[0]))
-                Log.d(tAG, "Port: " +pcAddress.split(":")[1])
-
-                val socket = DatagramSocket()
-                val sendPacket = DatagramPacket(
-                    sendBateArray,
-                    sendBateArray.size,
-                    InetAddress.getByName(pcAddress.split(":")[0]),
-                    pcAddress.split(":")[1].toInt())
-
-                socket.send(sendPacket)
-                socket.close()
-                Log.d(tAG, "sent packet")
-
-                val receiveBuffer = ByteArray(1024)
-                val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
-
-//                val listenerSocket = DatagramSocket(
-//                    12921,
-//                    InetAddress.getByName("0.0.0.0"))
-                val listenerSocket = DatagramSocket(
-                    InetSocketAddress("192.168.3.119", 12921))
-                Log.d(tAG, "start receive ...")
-                listenerSocket.receive(receivePacket)
-                Log.d(tAG, "end receive")
-                Log.d(tAG, "received: "
-                        + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
-
-                receiveScope.launch {
-                    while(isRunning){
-                        listenerSocket.receive(receivePacket)
-                        Log.d(tAG, "received: "
-                                + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
-
-                    }
+                if(droidFolderComm == null){
+                    droidFolderComm = DroidFolderComm(
+                        "192.168.3.119",12921,
+                        pcIp, pcPort.toInt(),
+                        receiveScope
+                    );
                 }
+
+                val commResult = droidFolderComm!!.Register(
+                    "192.168.3.119", 12921, "Pixel 7")
+
+                Log.d(tAG, "commResult: "
+                        + commResult.resultDataDic[CmdPar.returnMsg])
             } catch (e: InterruptedException) {
                 // Restore interrupt status.
                 Thread.currentThread().interrupt()
