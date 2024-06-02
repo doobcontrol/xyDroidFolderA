@@ -8,7 +8,7 @@ import java.io.File
 class DroidFolderComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    val workScope: CoroutineScope
+    workScope: CoroutineScope
 ) {
     private val tAG: String = "DroidFolderComm"
 
