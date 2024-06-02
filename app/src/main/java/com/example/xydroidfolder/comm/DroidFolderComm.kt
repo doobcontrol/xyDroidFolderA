@@ -52,20 +52,16 @@ class DroidFolderComm(
         val commData = CommData.fromCommPkgString(receivedString)
         val commResult = CommResult(commData.cmdID)
 
+        val directory =
+            Environment
+                .getExternalStorageDirectory()
+                .path.toString()
+
         when(commData.cmd){
             DroidFolderCmd.GetInitFolder -> {
-                val directory =
-                    Environment
-                        .getExternalStorageDirectory()
-                        .path.toString()
                 getFolderContent(commResult, directory)
             }
             DroidFolderCmd.GetFolder -> {
-                val directory =
-                    Environment
-                        .getExternalStorageDirectory()
-                        .path.toString()
-
                 getFolderContent(commResult,
                     directory + "/" +
                     (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")

@@ -2,10 +2,12 @@ package com.example.xydroidfolder
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,8 +32,25 @@ import io.github.g00fy2.quickie.ScanCustomCode
 import io.github.g00fy2.quickie.config.ScannerConfig
 
 class MainActivity : ComponentActivity() {
+    private val tAG: String = "MainActivity"
+    private val requestMultiplePermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        permissions.entries.forEach {
+            Log.d(tAG, "${it.key} = ${it.value}")
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+            requestMultiplePermissions.launch(
+                arrayOf(
+                    "android.permission.READ_MEDIA_IMAGES",
+                    "android.permission.READ_MEDIA_VIDEO",
+                    "android.permission.READ_MEDIA_AUDIO",
+                    "android.permission.READ_EXTERNAL_STORAGE"
+                )
+            )
+
         enableEdgeToEdge()
         setContent {
             XyDroidFolderATheme {
