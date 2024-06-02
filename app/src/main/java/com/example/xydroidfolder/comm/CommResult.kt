@@ -18,13 +18,15 @@ class CommResult(
                 val param = it.split("=")
                 val key = param[0]
                 val value = param[1]
-                if(key == CmdPar.cmdID.name) {
-                    cmdID = value
-                    errorCmdID = false
-                }
-                else if(key == CmdPar.cmdSucceed.name) cmdSucceed = value.toBoolean()
-                else{
-                    resultDataDic[CmdPar.valueOf(key)] = value
+                when (key) {
+                    CmdPar.cmdID.name -> {
+                        cmdID = value
+                        errorCmdID = false
+                    }
+                    CmdPar.cmdSucceed.name -> cmdSucceed = value.toBoolean()
+                    else -> {
+                        resultDataDic[CmdPar.valueOf(key)] = value
+                    }
                 }
             }
 
@@ -52,8 +54,5 @@ class CommResult(
             pkgString.append("${k.name}=$v")
         }
         return pkgString.toString()
-    }
-    fun toCommPkgBytes(): ByteArray {
-        return toCommPkgString().toByteArray()
     }
 }

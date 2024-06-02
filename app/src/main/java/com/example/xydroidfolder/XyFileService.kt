@@ -47,18 +47,18 @@ class XyFileService : Service()  {
                 val intent: Intent = msg.obj as Intent
                 val pcAddress: String = intent.getStringExtra("key")!!
 
-                val pcIp = pcAddress.split(":")[0];
-                val pcPort = pcAddress.split(":")[1];
+                val pcIp = pcAddress.split(":")[0]
+                val pcPort = pcAddress.split(":")[1]
 
                 if(droidFolderComm == null){
                     droidFolderComm = DroidFolderComm(
                         "192.168.3.119",12921,
                         pcIp, pcPort.toInt(),
                         receiveScope
-                    );
+                    )
                 }
 
-                val commResult = droidFolderComm!!.Register(
+                val commResult = droidFolderComm!!.register(
                     "192.168.3.119", 12921,
                     getDeviceName()
                 )
@@ -128,7 +128,7 @@ class XyFileService : Service()  {
     }
 
     private fun capitalize(s: String?): String {
-        if (s == null || s.length == 0) {
+        if (s.isNullOrEmpty()) {
             return ""
         }
         val first = s[0]

@@ -12,16 +12,16 @@ import java.net.SocketAddress
 class XyUdpComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    val workScope: CoroutineScope,
+    private val workScope: CoroutineScope,
     val xyCommRequestHandler: (String) -> String
 ): IXyComm {
-    val tAG: String = "IXyComm"
+    private val tAG: String = "IXyComm"
 
-    var localPoint: SocketAddress? = null
-    var targetPoint: SocketAddress? = null
+    private var localPoint: SocketAddress? = null
+    private var targetPoint: SocketAddress? = null
     init {
-        localPoint = InetSocketAddress(localIp,localPort);
-        targetPoint = InetSocketAddress(targetIp,targetPort);
+        localPoint = InetSocketAddress(localIp,localPort)
+        targetPoint = InetSocketAddress(targetIp,targetPort)
     }
     override fun startListen() {
         val receiveBuffer = ByteArray(1024)
@@ -62,9 +62,6 @@ class XyUdpComm(
 
             socket.send(sendPacket)
             Log.d(tAG, "sent packet")
-
-            val receiveBuffer = ByteArray(1024)
-            val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
 
             Log.d(tAG, "start receive ...")
             socket.receive(receivePacket)

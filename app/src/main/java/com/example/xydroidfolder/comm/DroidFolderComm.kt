@@ -8,28 +8,32 @@ import java.io.File
 class DroidFolderComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    val workScope: CoroutineScope
+    workScope: CoroutineScope
 ) {
-    val tAG: String = "DroidFolderComm"
+    private val tAG: String = "DroidFolderComm"
 
-    val myXyUdpComm: IXyComm
+    private val myXyUdpComm: IXyComm
 
     init {
         myXyUdpComm = XyUdpComm(
             localIp, localPort,
             targetIp, targetPort,
             workScope,
-            ::XyCommRequestHandler)
+            ::xyCommRequestHandler)
         myXyUdpComm.startListen()
     }
 
-    private fun Request(commData: CommData): CommResult{
-        return CommResult(
+    private fun request(commData: CommData): CommResult{
+        val commResult: CommResult = CommResult.fromCommPkgString(
             myXyUdpComm.sendForResponse(commData.toCommPkgString())
         )
+        if(commResult.cmdID != commData.cmdID){
+            commResult.errorCmdID = true
+        }
+        return commResult
     }
 
-    fun Register(
+    fun register(
         ip: String,
         port: Int,
         hostName: String): CommResult
@@ -39,12 +43,12 @@ class DroidFolderComm(
         cmdParDic[CmdPar.port] = port.toString()
         cmdParDic[CmdPar.hostName] = hostName
 
-        val commData = CommData(DroidFolderCmd.Register, cmdParDic);
+        val commData = CommData(DroidFolderCmd.Register, cmdParDic)
 
-        return Request(commData);
+        return request(commData)
     }
 
-    fun XyCommRequestHandler(receivedString: String): String{
+    private fun xyCommRequestHandler(receivedString: String): String{
         val commData = CommData.fromCommPkgString(receivedString)
         val commResult = CommResult(commData.cmdID)
 
@@ -81,25 +85,25 @@ class DroidFolderComm(
 
         val files = directoryList?.filter { it.isFile }
         Log.d(tAG, "files: " + files?.count())
-        var filesStr = StringBuilder()
+        val filesStr = StringBuilder()
         files?.forEach { file ->
             if(filesStr.isNotEmpty()){
                 filesStr.append("|")
             }
             filesStr.append(file.name)
         }
-        commResult.resultDataDic[CmdPar.files] = filesStr.toString();
+        commResult.resultDataDic[CmdPar.files] = filesStr.toString()
 
         val folders = directoryList?.filter { it.isDirectory }
         Log.d(tAG, "folders: " + folders?.count())
-        var foldersStr = StringBuilder()
+        val foldersStr = StringBuilder()
         folders?.forEach { folder ->
             if(foldersStr.isNotEmpty()){
                 foldersStr.append("|")
             }
             foldersStr.append(folder.name)
         }
-        commResult.resultDataDic[CmdPar.folders] = foldersStr.toString();
+        commResult.resultDataDic[CmdPar.folders] = foldersStr.toString()
     }
 }
 

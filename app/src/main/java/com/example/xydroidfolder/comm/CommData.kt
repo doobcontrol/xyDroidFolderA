@@ -47,7 +47,4 @@ class CommData(
         }
         return pkgString.toString()
     }
-    fun toCommPkgBytes(): ByteArray {
-        return toCommPkgString().toByteArray()
-    }
 }
