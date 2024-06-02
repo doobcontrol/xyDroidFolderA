@@ -12,7 +12,8 @@ import java.net.SocketAddress
 class XyUdpComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    val workScope: CoroutineScope
+    val workScope: CoroutineScope,
+    val xyCommRequestHandler: (String) -> String
 ): IXyComm {
     val tAG: String = "IXyComm"
 
@@ -31,9 +32,18 @@ class XyUdpComm(
         workScope.launch {
             while(XyFileService.isRunning){
                 listenerSocket.receive(receivePacket)
-                Log.d(tAG, "received: "
-                        + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
 
+                val receivedData = receiveBuffer.copyOfRange(0, receivePacket.length)
+                Log.d(tAG, "received: "
+                        + receivedData.toString(Charsets.UTF_8))
+
+                val responseString = xyCommRequestHandler(receivedData.toString(Charsets.UTF_8))
+                val sendBateArray = responseString.toByteArray(Charsets.UTF_8)
+                val sendPacket = DatagramPacket(
+                    sendBateArray,
+                    sendBateArray.size,
+                    receivePacket.socketAddress)
+                listenerSocket.send(sendPacket)
             }
         }
     }
