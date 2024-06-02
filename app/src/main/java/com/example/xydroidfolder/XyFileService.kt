@@ -18,6 +18,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.net.Inet4Address
+import java.net.NetworkInterface
+import java.net.SocketException
 
 
 class XyFileService : Service()  {
@@ -51,21 +54,27 @@ class XyFileService : Service()  {
                 val pcIp = pcAddress.split(":")[0]
                 val pcPort = pcAddress.split(":")[1]
 
-                if(droidFolderComm == null){
-                    droidFolderComm = DroidFolderComm(
-                        "192.168.3.119",12921,
-                        pcIp, pcPort.toInt(),
-                        receiveScope
-                    )
-                }
+                val ipAddress: String? = getDeviceIpAddress()
 
-                receiveScope.launch {
-                    val commResult = droidFolderComm!!.register(
-                        "192.168.3.119", 12921,
-                        getDeviceName()
-                    )
-                    Log.d(tAG, "commResult: "
-                            + commResult.resultDataDic[CmdPar.returnMsg])
+                if (ipAddress != null) {
+                    if(ipAddress.isNotEmpty()){
+                        if(droidFolderComm == null){
+                            droidFolderComm = DroidFolderComm(
+                                ipAddress,12921,
+                                pcIp, pcPort.toInt(),
+                                receiveScope
+                            )
+                        }
+
+                        receiveScope.launch {
+                            val commResult = droidFolderComm!!.register(
+                                ipAddress, 12921,
+                                getDeviceName()
+                            )
+                            Log.d(tAG, "commResult: "
+                                    + commResult.resultDataDic[CmdPar.returnMsg])
+                        }
+                    }
                 }
             } catch (e: InterruptedException) {
                 // Restore interrupt status.
@@ -139,5 +148,24 @@ class XyFileService : Service()  {
         } else {
             first.uppercaseChar().toString() + s.substring(1)
         }
+    }
+
+    fun getDeviceIpAddress(): String? {
+        try {
+            val en = NetworkInterface.getNetworkInterfaces()
+            while (en.hasMoreElements()) {
+                val intF = en.nextElement()
+                val enumIpAddress = intF.inetAddresses
+                while (enumIpAddress.hasMoreElements()) {
+                    val inetAddress = enumIpAddress.nextElement()
+                    if (!inetAddress.isLoopbackAddress && inetAddress is Inet4Address) {
+                        return inetAddress.getHostAddress()
+                    }
+                }
+            }
+        } catch (ex: SocketException) {
+            ex.printStackTrace()
+        }
+        return null
     }
 }
