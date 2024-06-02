@@ -2,6 +2,7 @@ package com.example.xydroidfolder
 
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
@@ -10,19 +11,13 @@ import android.os.Message
 import android.os.Process
 import android.util.Log
 import com.example.xydroidfolder.comm.CmdPar
-import com.example.xydroidfolder.comm.CommData
-import com.example.xydroidfolder.comm.DroidFolderCmd
 import com.example.xydroidfolder.comm.DroidFolderComm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.net.InetSocketAddress
+
 
 class XyFileService : Service()  {
     val tAG: String = "XyFileService"
@@ -64,7 +59,9 @@ class XyFileService : Service()  {
                 }
 
                 val commResult = droidFolderComm!!.Register(
-                    "192.168.3.119", 12921, "Pixel 7")
+                    "192.168.3.119", 12921,
+                    getDeviceName()
+                )
 
                 Log.d(tAG, "commResult: "
                         + commResult.resultDataDic[CmdPar.returnMsg])
@@ -119,5 +116,26 @@ class XyFileService : Service()  {
         //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
         isRunning = false
         _uiState.value = isRunning
+    }
+    fun getDeviceName(): String {
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+        return if (model.startsWith(manufacturer)) {
+            capitalize(model)
+        } else {
+            capitalize(manufacturer) + " " + model
+        }
+    }
+
+    private fun capitalize(s: String?): String {
+        if (s == null || s.length == 0) {
+            return ""
+        }
+        val first = s[0]
+        return if (Character.isUpperCase(first)) {
+            s
+        } else {
+            first.uppercaseChar().toString() + s.substring(1)
+        }
     }
 }
