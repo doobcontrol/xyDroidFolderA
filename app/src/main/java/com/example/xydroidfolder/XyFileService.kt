@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 
 class XyFileService : Service()  {
@@ -58,13 +59,14 @@ class XyFileService : Service()  {
                     )
                 }
 
-                val commResult = droidFolderComm!!.register(
-                    "192.168.3.119", 12921,
-                    getDeviceName()
-                )
-
-                Log.d(tAG, "commResult: "
-                        + commResult.resultDataDic[CmdPar.returnMsg])
+                receiveScope.launch {
+                    val commResult = droidFolderComm!!.register(
+                        "192.168.3.119", 12921,
+                        getDeviceName()
+                    )
+                    Log.d(tAG, "commResult: "
+                            + commResult.resultDataDic[CmdPar.returnMsg])
+                }
             } catch (e: InterruptedException) {
                 // Restore interrupt status.
                 Thread.currentThread().interrupt()

@@ -3,6 +3,7 @@ package com.example.xydroidfolder.comm
 import android.util.Log
 import com.example.xydroidfolder.XyFileService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -48,29 +49,32 @@ class XyUdpComm(
         }
     }
 
-    override fun sendForResponse(sendData: String): String {
+    override suspend fun sendForResponse(sendData: String): String {
         val receiveBuffer = ByteArray(1024)
         val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
 
-        workScope.launch {
-            val socket = DatagramSocket()
-            val sendBateArray = sendData.toByteArray(Charsets.UTF_8)
-            val sendPacket = DatagramPacket(
-                sendBateArray,
-                sendBateArray.size,
-                targetPoint)
+        val socket = DatagramSocket()
+        val sendBateArray = sendData.toByteArray(Charsets.UTF_8)
+        val sendPacket = DatagramPacket(
+            sendBateArray,
+            sendBateArray.size,
+            targetPoint
+        )
 
-            socket.send(sendPacket)
-            Log.d(tAG, "sent packet")
+        socket.send(sendPacket)
+        Log.d(tAG, "sent packet")
 
-            Log.d(tAG, "start receive ...")
-            socket.receive(receivePacket)
-            Log.d(tAG, "end receive")
-            Log.d(tAG, "received: "
-                    + receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8))
+        Log.d(tAG, "start receive ...")
+        socket.receive(receivePacket)
+        Log.d(tAG, "end receive")
+        Log.d(
+            tAG, "received: "
+                    + receiveBuffer.copyOfRange(0, receivePacket.length)
+                .toString(Charsets.UTF_8)
+        )
 
-            socket.close()
-        }
+        socket.close()
+
         return receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8)
     }
 }

@@ -1,5 +1,7 @@
 package com.example.xydroidfolder.comm
 
+import android.util.Log
+
 class CommResult(
     var cmdID: String,
     var cmdSucceed: Boolean = false,
@@ -7,11 +9,14 @@ class CommResult(
     val resultDataDic: MutableMap<CmdPar, String> = mutableMapOf()
 ) {
     companion object {
+        private val tAG: String = "CommResult"
         fun fromCommPkgString(pkgString: String): CommResult {
             var cmdID = ""
             var cmdSucceed = false
             var errorCmdID = true
             val resultDataDic: MutableMap<CmdPar, String> = mutableMapOf()
+
+            Log.d(this.tAG, "fromCommPkgString: $pkgString")
 
             val paramList = pkgString.split(",")
             paramList.forEach {
