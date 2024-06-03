@@ -1,4 +1,4 @@
-package com.example.xydroidfolder.comm
+package com.xySoft.xydroidfolder.comm
 
 import android.util.Log
 

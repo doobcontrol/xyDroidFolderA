@@ -1,4 +1,4 @@
-package com.example.xydroidfolder
+package com.xySoft.xydroidfolder
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

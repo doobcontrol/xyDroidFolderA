@@ -1,4 +1,4 @@
-package com.example.xydroidfolder
+package com.xySoft.xydroidfolder
 
 import android.app.Service
 import android.content.Intent
@@ -10,8 +10,8 @@ import android.os.Looper
 import android.os.Message
 import android.os.Process
 import android.util.Log
-import com.example.xydroidfolder.comm.CmdPar
-import com.example.xydroidfolder.comm.DroidFolderComm
+import com.xySoft.xydroidfolder.comm.CmdPar
+import com.xySoft.xydroidfolder.comm.DroidFolderComm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

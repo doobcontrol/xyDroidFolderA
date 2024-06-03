@@ -1,4 +1,4 @@
-package com.example.xydroidfolder
+package com.xySoft.xydroidfolder
 
 import android.Manifest.*
 import android.content.Intent
@@ -33,7 +33,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.xydroidfolder.ui.theme.XyDroidFolderATheme
+import com.example.xydroidfolder.R
+import com.xySoft.xydroidfolder.ui.theme.XyDroidFolderATheme
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanCustomCode
 import io.github.g00fy2.quickie.config.ScannerConfig

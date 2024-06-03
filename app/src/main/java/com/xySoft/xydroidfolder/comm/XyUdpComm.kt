@@ -1,10 +1,11 @@
-package com.example.xydroidfolder.comm
+package com.xySoft.xydroidfolder.comm
 
 import android.util.Log
-import com.example.xydroidfolder.XyFileService
+import com.xySoft.xydroidfolder.XyFileService
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
@@ -53,7 +54,9 @@ class XyUdpComm(
         val receiveBuffer = ByteArray(1024)
         val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
 
-        val socket = DatagramSocket()
+        val socket = withContext(Dispatchers.IO) {
+            DatagramSocket()
+        }
         val sendBateArray = sendData.toByteArray(Charsets.UTF_8)
         val sendPacket = DatagramPacket(
             sendBateArray,
@@ -61,11 +64,15 @@ class XyUdpComm(
             targetPoint
         )
 
-        socket.send(sendPacket)
+        withContext(Dispatchers.IO) {
+            socket.send(sendPacket)
+        }
         Log.d(tAG, "sent packet")
 
         Log.d(tAG, "start receive ...")
-        socket.receive(receivePacket)
+        withContext(Dispatchers.IO) {
+            socket.receive(receivePacket)
+        }
         Log.d(tAG, "end receive")
         Log.d(
             tAG, "received: "

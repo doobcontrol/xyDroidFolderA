@@ -1,6 +1,5 @@
-package com.example.xydroidfolder.ui.theme
+package com.xySoft.xydroidfolder.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

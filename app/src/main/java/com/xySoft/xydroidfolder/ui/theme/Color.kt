@@ -1,4 +1,4 @@
-package com.example.xydroidfolder.ui.theme
+package com.xySoft.xydroidfolder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
