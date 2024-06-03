@@ -1,7 +1,12 @@
 package com.example.xydroidfolder
 
+import android.Manifest.*
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.xydroidfolder.ui.theme.XyDroidFolderATheme
@@ -33,23 +40,13 @@ import io.github.g00fy2.quickie.config.ScannerConfig
 
 class MainActivity : ComponentActivity() {
     private val tAG: String = "MainActivity"
-    private val requestMultiplePermissions =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-        permissions.entries.forEach {
-            Log.d(tAG, "${it.key} = ${it.value}")
-        }
-    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-            requestMultiplePermissions.launch(
-                arrayOf(
-                    "android.permission.READ_MEDIA_IMAGES",
-                    "android.permission.READ_MEDIA_VIDEO",
-                    "android.permission.READ_MEDIA_AUDIO",
-                    "android.permission.READ_EXTERNAL_STORAGE"
-                )
-            )
+        if(!checkStoragePermissions()){
+            requestForStoragePermissions()
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -63,6 +60,55 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun checkStoragePermissions(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Android is 11 (R) or above
+            return Environment.isExternalStorageManager()
+        } else {
+            //Below android 11
+            val write =
+                ContextCompat.checkSelfPermission(this,
+                    permission.WRITE_EXTERNAL_STORAGE)
+            val read =
+                ContextCompat.checkSelfPermission(this,
+                    permission.READ_EXTERNAL_STORAGE)
+
+            return read == PackageManager.PERMISSION_GRANTED && write == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private val storagePermissionCode = 23
+    private fun requestForStoragePermissions() {
+        //Android is 11 (R) or above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent()
+                intent.setAction(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                val uri = Uri.fromParts("package", this.packageName, null)
+                intent.setData(uri)
+                storageActivityResultLauncher.launch(intent)
+            } catch (e: Exception) {
+                val intent = Intent()
+                intent.setAction(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                storageActivityResultLauncher.launch(intent)
+            }
+        } else {
+            //Below android 11
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    permission.WRITE_EXTERNAL_STORAGE,
+                    permission.READ_EXTERNAL_STORAGE
+                ),
+                storagePermissionCode
+            )
+        }
+    }
+    private val storageActivityResultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            Log.d(tAG, "$result")
+        }
 
     private fun startFileService(pcAddress: String){
         val intent = Intent(this, XyFileService::class.java)
