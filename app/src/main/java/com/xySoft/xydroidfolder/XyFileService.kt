@@ -11,12 +11,14 @@ import android.os.Message
 import android.os.Process
 import android.util.Log
 import com.xySoft.xydroidfolder.comm.CmdPar
+import com.xySoft.xydroidfolder.comm.CommData
+import com.xySoft.xydroidfolder.comm.CommResult
+import com.xySoft.xydroidfolder.comm.DroidFolderCmd
 import com.xySoft.xydroidfolder.comm.DroidFolderComm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -31,11 +33,27 @@ class XyFileService : Service()  {
 
     private var droidFolderComm: DroidFolderComm? = null
     companion object {
-        var isRunning: Boolean = false
 
-        private val _uiState = MutableStateFlow(isRunning)
+        const val PC_ADDRESS = "pcAddress"
+
         // The UI collects from this StateFlow to get its state updates
-        val ServiceRunningState: StateFlow<Boolean> = _uiState
+        val ServiceState: MutableStateFlow<MainScreenState> = MutableStateFlow(MainScreenState(
+            messages = mutableListOf()
+        ))
+
+        fun changeRunningState(isRunning: Boolean){
+            ServiceState.value = ServiceState.value.copy(isRunning = isRunning)
+        }
+        fun addStateMessage(message: String){
+            val messages = ServiceState.value.messages.toMutableList()
+            messages.add(message)
+            if(messages.size > 10){
+                messages.removeFirst()
+            }
+            ServiceState.value = ServiceState.value.copy(
+                messages = messages,
+            )
+        }
     }
 
     private var serviceLooper: Looper? = null
@@ -43,16 +61,15 @@ class XyFileService : Service()  {
 
     // Handler that receives messages from the thread
     private inner class ServiceHandler(looper: Looper) : Handler(looper) {
-
         override fun handleMessage(msg: Message) {
             // Normally we would do some work here, like download a file.
             // For our sample, we just sleep for 5 seconds.
             try {
                 val intent: Intent = msg.obj as Intent
-                val pcAddress: String = intent.getStringExtra("key")!!
+                val targetAddress: String = intent.getStringExtra(PC_ADDRESS)!!
 
-                val pcIp = pcAddress.split(":")[0]
-                val pcPort = pcAddress.split(":")[1]
+                val pcIp = targetAddress.split(":")[0]
+                val pcPort = targetAddress.split(":")[1]
 
                 val ipAddress: String? = getDeviceIpAddress()
 
@@ -62,7 +79,8 @@ class XyFileService : Service()  {
                             droidFolderComm = DroidFolderComm(
                                 ipAddress,12921,
                                 pcIp, pcPort.toInt(),
-                                receiveScope
+                                receiveScope,
+                                ::xyCommRequestHandler
                             )
                         }
 
@@ -72,6 +90,8 @@ class XyFileService : Service()  {
                                 getDeviceName()
                             )
                             Log.d(tAG, "commResult: "
+                                    + commResult.resultDataDic[CmdPar.returnMsg])
+                            addStateMessage("other side response: "
                                     + commResult.resultDataDic[CmdPar.returnMsg])
                         }
                     }
@@ -99,8 +119,7 @@ class XyFileService : Service()  {
             serviceLooper = looper
             serviceHandler = ServiceHandler(looper)
         }
-        isRunning = true
-        _uiState.value = isRunning
+        changeRunningState(true)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -125,9 +144,10 @@ class XyFileService : Service()  {
 
     override fun onDestroy() {
         //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
-        isRunning = false
-        _uiState.value = isRunning
+        droidFolderComm?.clean()
+        changeRunningState(false)
     }
+
     fun getDeviceName(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
@@ -167,5 +187,19 @@ class XyFileService : Service()  {
             ex.printStackTrace()
         }
         return null
+    }
+
+    fun xyCommRequestHandler(commData: CommData, commResult: CommResult){
+        when(commData.cmd){
+            DroidFolderCmd.GetInitFolder -> {
+                addStateMessage("list request: root")
+            }
+            DroidFolderCmd.GetFolder -> {
+                addStateMessage("list request: ${
+                    (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")
+                }")
+            }
+            else -> {}
+        }
     }
 }

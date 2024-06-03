@@ -8,7 +8,8 @@ import java.io.File
 class DroidFolderComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    workScope: CoroutineScope
+    workScope: CoroutineScope,
+    val xyCommRequestHandler: (CommData, CommResult) -> Unit
 ) {
     private val tAG: String = "DroidFolderComm"
 
@@ -21,6 +22,10 @@ class DroidFolderComm(
             workScope,
             ::xyCommRequestHandler)
         myXyUdpComm.startListen()
+    }
+
+    fun clean(){
+        myXyUdpComm.clean()
     }
 
     private suspend fun request(commData: CommData): CommResult{
@@ -69,6 +74,8 @@ class DroidFolderComm(
             }
             else -> {}
         }
+
+        xyCommRequestHandler(commData, commResult)
 
         return commResult.toCommPkgString()
     }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,7 +34,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.xydroidfolder.R
 import com.xySoft.xydroidfolder.ui.theme.XyDroidFolderATheme
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanCustomCode
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             XyDroidFolderATheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    GetQRCodeExample(
+                    MainScreen(
                         startFileService = { startFileService(it) },
                         modifier = Modifier.padding(innerPadding)
                     )
@@ -113,24 +113,27 @@ class MainActivity : ComponentActivity() {
 
     private fun startFileService(pcAddress: String){
         val intent = Intent(this, XyFileService::class.java)
-        intent.putExtra("key", pcAddress)
+        intent.putExtra(XyFileService.PC_ADDRESS, pcAddress)
         startService(Intent(intent))
     }
 }
 
 @Composable
-fun GetQRCodeExample(
+fun MainScreen(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = viewModel(),
     startFileService: (String) -> Unit = {}
 ) {
-    val isServiceRunning by viewModel.isRunningStateFlow.collectAsStateWithLifecycle(
+    val mainScreenState: MainScreenState by viewModel.mainScreenState.collectAsStateWithLifecycle(
         //Dealing with exception: CompositionLocal LocalLifecycleOwner not present
         //3. Manually Pass `LocalLifecycleOwner`
         lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     )
 
-    var scanQrCodeInfo by remember { mutableStateOf<String?>("...") }
+    val isServiceRunning = mainScreenState.isRunning
+    val messages = mainScreenState.messages
+
+    var scanQrCodeInfo by remember { mutableStateOf<String?>(null) }
     val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
     { result ->
         // handle QRResult
@@ -156,15 +159,26 @@ fun GetQRCodeExample(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxSize()
     ) {
-        Button(onClick = { scanQrCodeLauncher.launch(
-            ScannerConfig.build {
-                setOverlayStringRes(R.string.scan_barcode) // string resource used for the scanner overlay
-            })
-        }) {
-            Text(stringResource(R.string.scan_barcode))
+        if(!isServiceRunning){
+            Button(onClick = { scanQrCodeLauncher.launch(
+                ScannerConfig.build {
+                    setOverlayStringRes(R.string.scan_barcode) // string resource used for the scanner overlay
+                })
+            }) {
+                Text(stringResource(R.string.scan_barcode))
+            }
         }
-        Text(scanQrCodeInfo?:"...")
-        Text(if(isServiceRunning) "Service is Running" else "Service not Running")
+        else{
+            Text("target: "  + (scanQrCodeInfo?: "No QR Code"))
+
+            LazyColumn {
+                messages.forEach {
+                    item {
+                        Text(it)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -173,7 +187,7 @@ fun GetQRCodeExample(
 fun GreetingPreview() {
     XyDroidFolderATheme {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            GetQRCodeExample(
+            MainScreen(
                 modifier = Modifier.padding(innerPadding)
             )
         }

@@ -1,7 +1,6 @@
 package com.xySoft.xydroidfolder.comm
 
 import android.util.Log
-import com.xySoft.xydroidfolder.XyFileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,15 +24,21 @@ class XyUdpComm(
         localPoint = InetSocketAddress(localIp,localPort)
         targetPoint = InetSocketAddress(targetIp,targetPort)
     }
+    private var inListenning: Boolean = false
+    private var listenerSocket: DatagramSocket? = null
     override fun startListen() {
         val receiveBuffer = ByteArray(1024)
         val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
 
-        val listenerSocket = DatagramSocket(localPoint)
-
+        listenerSocket = DatagramSocket(localPoint)
+        inListenning = true
         workScope.launch {
-            while(XyFileService.isRunning){
-                listenerSocket.receive(receivePacket)
+            while(inListenning){
+                listenerSocket!!.receive(receivePacket)
+
+                if(!inListenning){
+                    break
+                }
 
                 val receivedData = receiveBuffer.copyOfRange(0, receivePacket.length)
                 Log.d(tAG, "received: "
@@ -45,7 +50,7 @@ class XyUdpComm(
                     sendBateArray,
                     sendBateArray.size,
                     receivePacket.socketAddress)
-                listenerSocket.send(sendPacket)
+                listenerSocket!!.send(sendPacket)
             }
         }
     }
@@ -57,6 +62,8 @@ class XyUdpComm(
         val socket = withContext(Dispatchers.IO) {
             DatagramSocket()
         }
+        socketList.add(socket)
+
         val sendBateArray = sendData.toByteArray(Charsets.UTF_8)
         val sendPacket = DatagramPacket(
             sendBateArray,
@@ -81,7 +88,22 @@ class XyUdpComm(
         )
 
         socket.close()
+        socketList.remove(socket)
 
         return receiveBuffer.copyOfRange(0, receivePacket.length).toString(Charsets.UTF_8)
+    }
+
+    private val socketList = mutableListOf<DatagramSocket>()
+    override fun clean() {
+        //clean listener socket
+        inListenning = false
+        listenerSocket?.close()
+        listenerSocket=null
+
+        //clean wait socket for response if any
+        socketList.forEach {
+            it.close()
+        }
+        socketList.clear()
     }
 }
