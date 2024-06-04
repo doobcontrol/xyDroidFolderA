@@ -1,7 +1,8 @@
-package com.xySoft.xydroidfolder
+package com.xySoft.xydroidfolder.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xySoft.xydroidfolder.XyFileService
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

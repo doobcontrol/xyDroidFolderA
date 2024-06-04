@@ -15,6 +15,7 @@ import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
 import com.xySoft.xydroidfolder.comm.DroidFolderCmd
 import com.xySoft.xydroidfolder.comm.DroidFolderComm
+import com.xySoft.xydroidfolder.ui.MainScreenState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -204,10 +205,7 @@ class XyFileService : Service()  {
                     (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "")
                 }")
 
-                commResult.resultDataDic.put(
-                    CmdPar.streamReceiverPar,
-                    "12922"
-                )
+                commResult.resultDataDic[CmdPar.streamReceiverPar] = "12922"
             }
             else -> {}
         }
