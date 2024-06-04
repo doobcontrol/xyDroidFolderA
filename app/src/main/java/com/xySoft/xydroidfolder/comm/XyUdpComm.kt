@@ -15,7 +15,8 @@ class XyUdpComm(
     private val localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
     private val workScope: CoroutineScope,
-    val xyCommRequestHandler: (String) -> String
+    val xyCommRequestHandler: (String) -> String,
+    val fileProgressNote: (Long) -> Unit
 ): IXyComm {
     private val tAG: String = "IXyComm"
 
@@ -132,12 +133,12 @@ class XyUdpComm(
             //write file task
             val receivedByteMap: MutableMap<Long, ByteArray> = mutableMapOf()
             var waitedPkgID: Long = 0
-
+            var taskIsDone = false
             //write file task
             workScope.launch {
                 val receiveFileStream = File(file).outputStream()
 
-                while (true)
+                while (!taskIsDone)
                 {
                     try
                     {
@@ -153,30 +154,22 @@ class XyUdpComm(
                                     0,
                                     tByte!!.count())
                                 totalReceivedLength += tByte.count()
-
-                                Log.d(tAG, "wrote: $totalReceivedLength")
+                                fileProgressNote(totalReceivedLength)
 
                                 synchronized (receivedByteMap)
                                 {
                                     receivedByteMap.remove(waitedPkgID)
                                 }
                                 waitedPkgID++
-
-//                                _xyCommFileEventHandler(
-//                                    this,
-//                                    new XyCommFileEventArgs(
-//                                            XyCommFileSendReceive.Receive,
-//                                    totalSendFileLength,
-//                                    totalReceivedLength
-//                                )
-//                                );
                             }
                         }
 
-                        //Log.d(tAG, "totalReceivedLength: $totalReceivedLength")
                         if (totalSendFileLength == totalReceivedLength)
                         {
                             Log.d(tAG, "writeTask done")
+                            receiveSocket.close()
+                            socketList.remove(receiveSocket)
+                            taskIsDone = true
                             break
                         }
                     }
@@ -199,58 +192,63 @@ class XyUdpComm(
             val receivePacket = DatagramPacket(receivedBytes, receivedBytes.size)
             //read socket task
             workScope.launch {
-                while (true)
+                while (!taskIsDone)
                 {
-                    receiveSocket.receive(receivePacket)
-
-                    //return pkg id
-                    val receivedLength = receivePacket.length
-                    val returnBytes = receivedBytes.copyOfRange(
-                        receivedLength - 16,
-                        receivedLength)
-                    val sendPacket = DatagramPacket(
-                        returnBytes,
-                        returnBytes.size,
-                        receivePacket.socketAddress)
-                    receiveSocket.send(sendPacket)
-
-                    val lengthByteArr = receivedBytes.copyOfRange(
-                        receivedLength - 8,
-                        receivedLength)
-
-                    val lengthByte: Long = byteArrayToLong(lengthByteArr)
-
-                    if (lengthByte == receivedLength.toLong() - 16)
+                    try
                     {
-                        val pkgID = receivedBytes.copyOfRange(
+                        receiveSocket.receive(receivePacket)
+
+                        //return pkg id
+                        val receivedLength = receivePacket.length
+                        val returnBytes = receivedBytes.copyOfRange(
                             receivedLength - 16,
-                            receivedLength - 8)
+                            receivedLength)
+                        val sendPacket = DatagramPacket(
+                            returnBytes,
+                            returnBytes.size,
+                            receivePacket.socketAddress)
+                        receiveSocket.send(sendPacket)
 
-                        val pkgIDNumber: Long = byteArrayToLong(pkgID)
+                        val lengthByteArr = receivedBytes.copyOfRange(
+                            receivedLength - 8,
+                            receivedLength)
 
-                        synchronized  (receivedByteMap)
+                        val lengthByte: Long = byteArrayToLong(lengthByteArr)
+
+                        if (lengthByte == receivedLength.toLong() - 16)
                         {
-                            if (pkgIDNumber >= waitedPkgID
-                                && !receivedByteMap.containsKey(pkgIDNumber))
+                            val pkgID = receivedBytes.copyOfRange(
+                                receivedLength - 16,
+                                receivedLength - 8)
+
+                            val pkgIDNumber: Long = byteArrayToLong(pkgID)
+
+                            synchronized  (receivedByteMap)
                             {
-                                receivedByteMap[pkgIDNumber] = receivedBytes
-                                    .copyOfRange(0, lengthByte.toInt())
+                                if (pkgIDNumber >= waitedPkgID
+                                    && !receivedByteMap.containsKey(pkgIDNumber))
+                                {
+                                    receivedByteMap[pkgIDNumber] = receivedBytes
+                                        .copyOfRange(0, lengthByte.toInt())
+                                }
                             }
                         }
-                    }
 
-                    if (totalSendFileLength == totalReceivedLength)
+                        if (totalSendFileLength == totalReceivedLength)
+                        {
+                            Log.d(tAG, "receiveTask done")
+                            break
+                        }
+                    }
+                    catch (e: Exception)
                     {
-                        Log.d(tAG, "receiveTask done")
-                        break
+                        Log.d(tAG, "Exception e: "
+                                + e.message + "" + e.stackTrace)
                     }
 
                 }
             }
         }.join()
-
-        receiveSocket.close()
-        socketList.remove(receiveSocket)
     }
 
     private fun byteArrayToLong(byteArray: ByteArray) : Long{

@@ -2,6 +2,7 @@ package com.xySoft.xydroidfolder.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xySoft.xydroidfolder.FileTransInfo
 import com.xySoft.xydroidfolder.XyFileService
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,11 @@ class MainViewModel : ViewModel() {
         XyFileService.ServiceState.map {
             MainScreenState(
                 isRunning = it.isRunning,
-                messages = it.messages)
+                messages = it.messages,
+                inFileTransfer = it.inFileTransfer,
+                isFileIn = it.isFileIn,
+                fileProgress = it.fileProgress,
+                fileTransInfo = it.fileTransInfo)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -22,6 +27,10 @@ class MainViewModel : ViewModel() {
 }
 
 data class MainScreenState(
-    var isRunning: Boolean = false,
-    var messages: MutableList<String>
+    val isRunning: Boolean = false,
+    val messages: MutableList<String>,
+    val inFileTransfer: Boolean = false,
+    val isFileIn: Boolean = false,
+    val fileProgress: Long = 0,
+    val fileTransInfo: FileTransInfo? = null
 )

@@ -15,6 +15,8 @@ import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
 import com.xySoft.xydroidfolder.comm.DroidFolderCmd
 import com.xySoft.xydroidfolder.comm.DroidFolderComm
+import com.xySoft.xydroidfolder.comm.FileInOut
+import com.xySoft.xydroidfolder.comm.FileTransEventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,7 +82,8 @@ class XyFileService : Service()  {
                                 ipAddress,12921,
                                 pcIp, pcPort.toInt(),
                                 receiveScope,
-                                ::xyCommRequestHandler
+                                ::xyCommRequestHandler,
+                                ::fileTransEventHandler
                             )
                         }
 
@@ -209,9 +212,52 @@ class XyFileService : Service()  {
             else -> {}
         }
     }
+    fun fileTransEventHandler(
+        fileTransEventType: FileTransEventType,
+        fileInOut: FileInOut?,
+        file: String?,
+        totalLong: Long,
+        doneLong: Long)
+    {
+        when(fileTransEventType){
+            FileTransEventType.Start -> {
+                val fileTransInfo = FileTransInfo(
+                    isFileIn = (fileInOut == FileInOut.In),
+                    file = file!!,
+                    totalLong = totalLong
+                )
+                ServiceState.value = ServiceState.value.copy(
+                    inFileTransfer = true,
+                    fileProgress = 0,
+                    fileTransInfo = fileTransInfo
+                )
+            }
+            FileTransEventType.End -> {
+                ServiceState.value = ServiceState.value.copy(
+                    inFileTransfer = false,
+                    fileProgress = 0,
+                    fileTransInfo = null
+                )
+            }
+            FileTransEventType.Progress -> {
+                ServiceState.value = ServiceState.value.copy(
+                    fileProgress = doneLong,
+                )
+            }
+        }
+    }
 }
 
 data class XyFileServiceState(
-    var isRunning: Boolean = false,
-    var messages: MutableList<String>
+    val isRunning: Boolean = false,
+    val messages: MutableList<String>,
+    val inFileTransfer: Boolean = false,
+    val isFileIn: Boolean = false,
+    val fileProgress: Long = 0,
+    val fileTransInfo: FileTransInfo? = null
+)
+data class FileTransInfo(
+    val isFileIn: Boolean = false,
+    val file: String,
+    val totalLong: Long
 )

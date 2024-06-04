@@ -10,7 +10,8 @@ class DroidFolderComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
     private val workScope: CoroutineScope,
-    val xyCommRequestHandler: (CommData, CommResult) -> Unit
+    val xyCommRequestHandler: (CommData, CommResult) -> Unit,
+    val fileTransEventHandler: (FileTransEventType, FileInOut?, String?, Long, Long) -> Unit
 ) {
     private val tAG: String = "DroidFolderComm"
 
@@ -21,7 +22,8 @@ class DroidFolderComm(
             localIp, localPort,
             targetIp, targetPort,
             workScope,
-            ::xyCommRequestHandler)
+            ::xyCommRequestHandler,
+            ::fileProgressNoteHandler)
         myXyUdpComm.startListen()
     }
 
@@ -80,10 +82,26 @@ class DroidFolderComm(
                         (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/")?:"")
 
                 workScope.launch {
+                    fileTransEventHandler(
+                        FileTransEventType.Start,
+                        FileInOut.In,
+                        fileName,
+                        commData.cmdParDic[CmdPar.fileLength]!!.toLong(),
+                        0
+                        )
+
                     myXyUdpComm.prepareStreamReceiver(
                         fileName, //commData.cmdParDic[CmdPar.targetFile]!!,
                         commData.cmdParDic[CmdPar.fileLength]!!,
                         commResult.resultDataDic[CmdPar.streamReceiverPar]!!)
+
+                    fileTransEventHandler(
+                        FileTransEventType.End,
+                        FileInOut.In,
+                        fileName,
+                        0,
+                        0
+                    )
                 }
             }
             else -> {}
@@ -120,6 +138,16 @@ class DroidFolderComm(
         }
         commResult.resultDataDic[CmdPar.folders] = foldersStr.toString()
     }
+
+    private fun fileProgressNoteHandler(progress: Long){
+        fileTransEventHandler(
+            FileTransEventType.Progress,
+            null,
+            null,
+            0,
+            progress
+        )
+    }
 }
 
 enum class DroidFolderCmd {
@@ -145,4 +173,13 @@ enum class CmdPar {
     files,
     returnMsg,
     errorMsg
+}
+enum class FileInOut {
+    In,
+    Out
+}
+enum class FileTransEventType {
+    Start,
+    End,
+    Progress
 }
