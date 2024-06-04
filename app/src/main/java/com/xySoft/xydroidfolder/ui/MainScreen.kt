@@ -26,7 +26,6 @@ import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanCustomCode
 import io.github.g00fy2.quickie.config.ScannerConfig
 
-
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,

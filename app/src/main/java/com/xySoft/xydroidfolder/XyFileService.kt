@@ -15,7 +15,6 @@ import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
 import com.xySoft.xydroidfolder.comm.DroidFolderCmd
 import com.xySoft.xydroidfolder.comm.DroidFolderComm
-import com.xySoft.xydroidfolder.ui.MainScreenState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,7 +37,7 @@ class XyFileService : Service()  {
         const val PC_ADDRESS = "pcAddress"
 
         // The UI collects from this StateFlow to get its state updates
-        val ServiceState: MutableStateFlow<MainScreenState> = MutableStateFlow(MainScreenState(
+        val ServiceState: MutableStateFlow<XyFileServiceState> = MutableStateFlow(XyFileServiceState(
             messages = mutableListOf()
         ))
 
@@ -211,3 +210,8 @@ class XyFileService : Service()  {
         }
     }
 }
+
+data class XyFileServiceState(
+    var isRunning: Boolean = false,
+    var messages: MutableList<String>
+)
