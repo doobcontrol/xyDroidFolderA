@@ -3,12 +3,13 @@ package com.xySoft.xydroidfolder.comm
 import android.os.Environment
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 
 class DroidFolderComm(
     localIp: String, localPort: Int,
     targetIp: String, targetPort: Int,
-    workScope: CoroutineScope,
+    private val workScope: CoroutineScope,
     val xyCommRequestHandler: (CommData, CommResult) -> Unit
 ) {
     private val tAG: String = "DroidFolderComm"
@@ -57,6 +58,8 @@ class DroidFolderComm(
         val commData = CommData.fromCommPkgString(receivedString)
         val commResult = CommResult(commData.cmdID)
 
+        xyCommRequestHandler(commData, commResult)
+
         val directory =
             Environment
                 .getExternalStorageDirectory()
@@ -72,10 +75,19 @@ class DroidFolderComm(
                     (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")
                 )
             }
+            DroidFolderCmd.SendFile -> {
+                val fileName = "$directory/" +
+                        (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/")?:"")
+
+                workScope.launch {
+                    myXyUdpComm.prepareStreamReceiver(
+                        fileName, //commData.cmdParDic[CmdPar.targetFile]!!,
+                        commData.cmdParDic[CmdPar.fileLength]!!,
+                        commResult.resultDataDic[CmdPar.streamReceiverPar]!!)
+                }
+            }
             else -> {}
         }
-
-        xyCommRequestHandler(commData, commResult)
 
         return commResult.toCommPkgString()
     }

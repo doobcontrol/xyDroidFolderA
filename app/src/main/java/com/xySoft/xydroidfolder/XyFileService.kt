@@ -199,6 +199,16 @@ class XyFileService : Service()  {
                     (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")
                 }")
             }
+            DroidFolderCmd.SendFile -> {
+                addStateMessage("receive file: ${
+                    (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "")
+                }")
+
+                commResult.resultDataDic.put(
+                    CmdPar.streamReceiverPar,
+                    "12922"
+                )
+            }
             else -> {}
         }
     }
