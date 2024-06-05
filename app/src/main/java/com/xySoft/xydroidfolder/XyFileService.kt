@@ -304,6 +304,9 @@ class XyFileService : Service()  {
         mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
     }
     private fun cancelNotification() {
+        if (mNotificationManager == null) {
+            mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        }
         mNotificationManager?.cancel(NOTIFICATION)
     }
 
