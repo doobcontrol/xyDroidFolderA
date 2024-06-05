@@ -155,6 +155,7 @@ class XyFileService : Service()  {
     override fun onDestroy() {
         //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
         droidFolderComm?.clean()
+        cancelNotification()
         changeRunningState(false)
     }
 
@@ -301,6 +302,9 @@ class XyFileService : Service()  {
             .setTicker("test1")
             .setContentText("test2")
         mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
+    }
+    private fun cancelNotification() {
+        mNotificationManager?.cancel(NOTIFICATION)
     }
 
     private fun createNotificationChannel(){
