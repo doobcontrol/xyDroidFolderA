@@ -1,5 +1,8 @@
 package com.xySoft.xydroidfolder
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
@@ -10,6 +13,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Process
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.xySoft.xydroidfolder.comm.CmdPar
 import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
@@ -96,6 +100,9 @@ class XyFileService : Service()  {
                                     + commResult.resultDataDic[CmdPar.returnMsg])
                             addStateMessage("other side response: "
                                     + commResult.resultDataDic[CmdPar.returnMsg])
+
+                            setupNotifications()
+                            showNotification()
                         }
                     }
                 }
@@ -246,6 +253,69 @@ class XyFileService : Service()  {
             }
         }
     }
+
+    //region: Persistent service icon in notification bar
+    private val NOTIFICATION: Int = 1
+    private val CLOSE_ACTION: String = "close"
+    private val CHANNEL_ID: String = "my_channel_id_01"
+
+    private var mNotificationManager: NotificationManager? = null
+    private var mNotificationBuilder: NotificationCompat.Builder? = null
+    private fun setupNotifications() { //called in onCreate()
+        if (mNotificationManager == null) {
+            mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val pendingCloseIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .setAction(CLOSE_ACTION),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        createNotificationChannel()
+        mNotificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+
+        mNotificationBuilder!!
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentTitle("Open")
+            .setWhen(System.currentTimeMillis())
+            .setContentIntent(pendingIntent)
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "Open", pendingCloseIntent
+            )
+            .setOngoing(true)
+    }
+
+    private fun showNotification() {
+        mNotificationBuilder!!
+            .setTicker("test1")
+            .setContentText("test2")
+        mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
+    }
+
+    private fun createNotificationChannel(){
+        // Create the NotificationChannel.
+        val name = "myChnnel"
+        val descriptionText = "myChnnel descriptionText"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
+        mChannel.description = descriptionText
+        // Register the channel with the system. You can't change the importance
+        // or other notification behaviors after this.
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(mChannel)
+    }
+    //endregion
 }
 
 data class XyFileServiceState(
