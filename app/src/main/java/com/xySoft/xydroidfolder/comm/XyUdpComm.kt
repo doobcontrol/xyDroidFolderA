@@ -67,6 +67,9 @@ class XyUdpComm(
         val socket = withContext(Dispatchers.IO) {
             DatagramSocket()
         }
+        withContext(Dispatchers.IO) {
+            socket.setSoTimeout(3000)
+        }
         socketList.add(socket)
 
         val sendBateArray = sendData.toByteArray(Charsets.UTF_8)
@@ -258,8 +261,8 @@ class XyUdpComm(
         streamReceiverPar: String)
     {
         val sendPort = streamReceiverPar.toInt()
-        val maxBufferTaskCount = 10
-        val maxSendTaskCount = 5
+        val maxBufferTaskCount = 40
+        val maxSendTaskCount = 20
 
         val sendTaskDataList = mutableListOf<FileSendTask>()
         val inSendTaskDataDic = mutableMapOf<Long, FileSendTask>()
@@ -375,6 +378,9 @@ class XyUdpComm(
 
         val socket = withContext(Dispatchers.IO) {
             DatagramSocket()
+        }
+        withContext(Dispatchers.IO) {
+            socket.setSoTimeout(3000)
         }
         socketList.add(socket)
 
