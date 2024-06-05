@@ -91,8 +91,8 @@ class DroidFolderComm(
                         )
 
                     myXyUdpComm.prepareStreamReceiver(
-                        fileName, //commData.cmdParDic[CmdPar.targetFile]!!,
-                        commData.cmdParDic[CmdPar.fileLength]!!,
+                        fileName,
+                        commData.cmdParDic[CmdPar.fileLength]!!.toLong(),
                         commResult.resultDataDic[CmdPar.streamReceiverPar]!!)
 
                     fileTransEventHandler(
@@ -104,11 +104,41 @@ class DroidFolderComm(
                     )
                 }
             }
+            DroidFolderCmd.GetFile -> {
+                val fileName = "$directory/" +
+                        (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/")?:"")
+                val fileLength = File(fileName).length()
+                commResult.resultDataDic[CmdPar.fileLength] = fileLength.toString()
+
+                workScope.launch {
+                    fileTransEventHandler(
+                        FileTransEventType.Start,
+                        FileInOut.Out,
+                        fileName,
+                        fileLength,
+                        0
+                    )
+
+                    myXyUdpComm.sendStream(
+                        fileName,
+                        fileLength,
+                        commData.cmdParDic[CmdPar.streamReceiverPar]!!)
+
+                    fileTransEventHandler(
+                        FileTransEventType.End,
+                        FileInOut.Out,
+                        fileName,
+                        0,
+                        0
+                    )
+                }
+            }
             else -> {}
         }
 
         return commResult.toCommPkgString()
     }
+
     private fun getFolderContent(commResult: CommResult, folderName: String){
         Log.d(tAG, "folderName: $folderName")
         val directory = File(folderName)

@@ -6,7 +6,12 @@ interface IXyComm {
     fun clean()
     suspend fun prepareStreamReceiver(
         file: String,
-        fileLength: String,
+        fileLength: Long,
         streamReceiverPar: String
         )
+    suspend fun sendStream(
+        file: String,
+        fileLength: Long,
+        streamReceiverPar: String
+    )
 }

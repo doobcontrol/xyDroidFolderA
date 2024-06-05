@@ -3,6 +3,7 @@ package com.xySoft.xydroidfolder.comm
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -13,7 +14,7 @@ import java.net.SocketAddress
 
 class XyUdpComm(
     private val localIp: String, localPort: Int,
-    targetIp: String, targetPort: Int,
+    private val targetIp: String, targetPort: Int,
     private val workScope: CoroutineScope,
     val xyCommRequestHandler: (String) -> String,
     val fileProgressNote: (Long) -> Unit
@@ -113,7 +114,7 @@ class XyUdpComm(
 
     override suspend fun prepareStreamReceiver(
         file: String,
-        fileLength: String,
+        fileLength: Long,
         streamReceiverPar: String
     ) {
         val receivePort = streamReceiverPar.toInt()
@@ -127,7 +128,7 @@ class XyUdpComm(
         Log.d(tAG, "localIp: $localIp port: $receivePort file: $file fileLength: $fileLength")
 
         var totalReceivedLength: Long = 0
-        val totalSendFileLength: Long = fileLength.toLong()
+        val totalSendFileLength: Long = fileLength
 
         withContext(Dispatchers.IO) {
             //write file task
@@ -251,6 +252,169 @@ class XyUdpComm(
         }.join()
     }
 
+    override suspend fun sendStream(
+        file: String,
+        fileLength: Long,
+        streamReceiverPar: String)
+    {
+        val sendPort = streamReceiverPar.toInt()
+        val maxBufferTaskCount = 10
+        val maxSendTaskCount = 5
+
+        val sendTaskDataList = mutableListOf<FileSendTask>()
+        val inSendTaskDataDic = mutableMapOf<Long, FileSendTask>()
+
+        val sendTasksDic = mutableMapOf<Long, Job>()
+
+        workScope.launch(Dispatchers.IO) {
+
+            val sendLength = 1024 * 32
+            var fileChunk: ByteArray
+            var numBytes: Int
+
+            var receivedSentBytes: Long = 0
+            val fileStream = File(file).inputStream()
+
+            var isReadFinish = false
+            var sendNumber: Long = 0
+
+            while (true) {
+                if (!isReadFinish) {
+                    if (sendTaskDataList.count() <= maxBufferTaskCount)
+                    {
+                        fileChunk = ByteArray(sendLength)
+                        numBytes =
+                            fileStream.read(fileChunk, 0, sendLength)
+                        if (numBytes > 0) {
+                            sendTaskDataList.add(
+                                FileSendTask(
+                                    sendNumber,
+                                    fileChunk,
+                                    numBytes
+                                )
+                            )
+                            sendNumber++
+                        } else {
+                            fileStream.close()
+                            isReadFinish = true
+                        }
+                    }
+                }
+
+                if (sendTaskDataList.isNotEmpty()
+                    && sendTasksDic.count() <= maxSendTaskCount)
+                {
+                    val fst = sendTaskDataList.first()
+
+                    synchronized (inSendTaskDataDic)
+                    {
+                        inSendTaskDataDic.put(fst.sendNumber, fst)
+                    }
+
+                    sendTaskDataList.remove(fst)
+
+                    val tempJob = workScope.launch {
+                        var sendSucceed = false
+                        while (!sendSucceed)
+                        {
+                            try
+                            {
+                                sendSucceed = sendNumberedStream(
+                                    fst.sendBytes,
+                                    fst.sendLength,
+                                    fst.sendNumber,
+                                    sendPort
+                                )
+                            }
+                            catch (e: Exception)
+                            {
+                                Log.d(tAG, "e: Exception: ${e.message}")
+                            }
+                        }
+                        receivedSentBytes += fst.sendLength
+
+
+                        Log.d(tAG, "succeed number: ${fst.sendNumber} sent: $receivedSentBytes")
+                        fileProgressNote(receivedSentBytes)
+                        synchronized (inSendTaskDataDic)
+                        {
+                            inSendTaskDataDic.remove(fst.sendNumber)
+                        }
+
+                        synchronized (sendTasksDic)
+                        {
+                            sendTasksDic.remove(fst.sendNumber)
+                        }
+                    }
+                    synchronized (sendTasksDic)
+                    {
+                        sendTasksDic.put(fst.sendNumber, tempJob)
+                    }
+                }
+
+                if (
+                    isReadFinish &&
+                    sendTaskDataList.isEmpty() &&
+                    sendTasksDic.isEmpty()
+                )
+                {
+                    Log.d(tAG, "fileLength: $fileLength")
+                    break
+                }
+            }
+        }.join()
+    }
+
+    private suspend fun sendNumberedStream(
+        sendBytes: ByteArray,
+        sendLength: Int,
+        sendNumber: Long,
+        sendPort: Int
+    ): Boolean{
+        val idByte = byteArrayFromLong(sendNumber)
+        val lengthByte = byteArrayFromLong(sendLength.toLong())
+
+        val sendBuffer = sendBytes + idByte + lengthByte
+        val receiveBuffer = ByteArray(16)
+
+        val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
+
+        val socket = withContext(Dispatchers.IO) {
+            DatagramSocket()
+        }
+        socketList.add(socket)
+
+        val sendPacket = DatagramPacket(
+            sendBuffer,
+            sendBuffer.size,
+            InetSocketAddress(targetIp,sendPort)
+        )
+
+        withContext(Dispatchers.IO) {
+            socket.send(sendPacket)
+        }
+
+        withContext(Dispatchers.IO) {
+            socket.receive(receivePacket)
+        }
+
+        socket.close()
+        socketList.remove(socket)
+
+        if(receivePacket.length != 16){
+            return false
+        }
+        else{
+            val returnNumber = byteArrayToLong(receiveBuffer.copyOfRange(0, 8))
+            val receivedSendLength = byteArrayToLong(receiveBuffer.copyOfRange(8, 16)).toInt()
+
+            Log.d(tAG, "send number: $returnNumber    length: $receivedSendLength")
+
+            return (returnNumber == sendNumber
+                    && receivedSendLength == sendLength)
+        }
+    }
+
     private fun byteArrayToLong(byteArray: ByteArray) : Long{
         var value = 0L
         var index = 0
@@ -268,10 +432,16 @@ class XyUdpComm(
 
         while(index < Long.SIZE_BYTES){
             shift -= 8
-            byteArray[index] = value.shr(shift).and(0xFFL).toByte()
+            byteArray[7 - index] = value.shr(shift).and(0xFFL).toByte()
             index++
         }
 
         return byteArray
     }
 }
+
+data class FileSendTask(
+    val sendNumber: Long,
+    val sendBytes: ByteArray,
+    val sendLength: Int
+)
