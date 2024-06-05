@@ -266,8 +266,7 @@ class XyUdpComm(
 
         val sendTasksDic = mutableMapOf<Long, Job>()
 
-        workScope.launch(Dispatchers.IO) {
-
+        withContext(Dispatchers.IO) {
             val sendLength = 1024 * 32
             var fileChunk: ByteArray
             var numBytes: Int
@@ -333,8 +332,6 @@ class XyUdpComm(
                         }
                         receivedSentBytes += fst.sendLength
 
-
-                        Log.d(tAG, "succeed number: ${fst.sendNumber} sent: $receivedSentBytes")
                         fileProgressNote(receivedSentBytes)
                         synchronized (inSendTaskDataDic)
                         {
@@ -358,11 +355,10 @@ class XyUdpComm(
                     sendTasksDic.isEmpty()
                 )
                 {
-                    Log.d(tAG, "fileLength: $fileLength")
                     break
                 }
             }
-        }.join()
+        }
     }
 
     private suspend fun sendNumberedStream(
@@ -374,10 +370,8 @@ class XyUdpComm(
         val idByte = byteArrayFromLong(sendNumber)
         val lengthByte = byteArrayFromLong(sendLength.toLong())
 
-        val sendBuffer = sendBytes + idByte + lengthByte
-        val receiveBuffer = ByteArray(16)
-
-        val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
+        //the last pkg length may not the array length
+        val sendBuffer = sendBytes.copyOfRange(0, sendLength) + idByte + lengthByte
 
         val socket = withContext(Dispatchers.IO) {
             DatagramSocket()
@@ -394,6 +388,8 @@ class XyUdpComm(
             socket.send(sendPacket)
         }
 
+        val receiveBuffer = ByteArray(16)
+        val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
         withContext(Dispatchers.IO) {
             socket.receive(receivePacket)
         }
@@ -407,8 +403,6 @@ class XyUdpComm(
         else{
             val returnNumber = byteArrayToLong(receiveBuffer.copyOfRange(0, 8))
             val receivedSendLength = byteArrayToLong(receiveBuffer.copyOfRange(8, 16)).toInt()
-
-            Log.d(tAG, "send number: $returnNumber    length: $receivedSendLength")
 
             return (returnNumber == sendNumber
                     && receivedSendLength == sendLength)
