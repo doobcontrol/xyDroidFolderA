@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
@@ -111,10 +112,11 @@ fun MainScreenStateless(
         }
         else{
             Spacer(modifier = Modifier.padding(8.dp).weight(1f))
+
             Column(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = modifier.fillMaxSize().padding(8.dp).weight(1f)
+                modifier = modifier.height(112.dp)
             ) {
                 Text("target: "  + (scanQrCodeInfo?: "No QR Code"))
 
@@ -137,7 +139,7 @@ fun MainScreenStateless(
                 }
             }
 
-            Spacer(modifier = Modifier.padding(8.dp).weight(0.5f))
+            Spacer(modifier = Modifier.padding(8.dp).weight(1f))
             LazyColumn(modifier = Modifier.padding(8.dp).weight(1f)) {
                 messages.forEach {
                     item {
