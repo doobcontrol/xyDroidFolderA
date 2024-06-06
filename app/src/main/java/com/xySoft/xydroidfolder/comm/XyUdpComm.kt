@@ -11,6 +11,8 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.net.SocketAddress
+import java.net.SocketException
+import java.net.SocketTimeoutException
 
 class XyUdpComm(
     private val localIp: String, localPort: Int,
@@ -36,26 +38,41 @@ class XyUdpComm(
         val receivePacket = DatagramPacket(receiveBuffer, receiveBuffer.size)
 
         listenerSocket = DatagramSocket(localPoint)
+        listenerSocket!!.soTimeout = 0
         inListening = true
         workScope.launch {
             while(inListening){
-                listenerSocket!!.receive(receivePacket)
+                try {
+                    listenerSocket!!.receive(receivePacket)
 
-                if(!inListening){
-                    break
+                    if(!inListening){
+                        break
+                    }
+
+                    val receivedData = receiveBuffer.copyOfRange(0, receivePacket.length)
+                    Log.d(tAG, "received: "
+                            + receivedData.toString(Charsets.UTF_8))
+
+                    val responseString = xyCommRequestHandler(receivedData.toString(Charsets.UTF_8))
+                    val sendBateArray = responseString.toByteArray(Charsets.UTF_8)
+                    val sendPacket = DatagramPacket(
+                        sendBateArray,
+                        sendBateArray.size,
+                        receivePacket.socketAddress)
+                    listenerSocket!!.send(sendPacket)
                 }
-
-                val receivedData = receiveBuffer.copyOfRange(0, receivePacket.length)
-                Log.d(tAG, "received: "
-                        + receivedData.toString(Charsets.UTF_8))
-
-                val responseString = xyCommRequestHandler(receivedData.toString(Charsets.UTF_8))
-                val sendBateArray = responseString.toByteArray(Charsets.UTF_8)
-                val sendPacket = DatagramPacket(
-                    sendBateArray,
-                    sendBateArray.size,
-                    receivePacket.socketAddress)
-                listenerSocket!!.send(sendPacket)
+                catch (ste: SocketTimeoutException) {
+                    Log.d(tAG, "listenerSocket SocketTimeoutException e: "
+                            + ste.message + "" + ste.stackTrace)
+                }
+                catch (se: SocketException) {
+                    Log.d(tAG, "listenerSocket SocketException e: "
+                            + se.message + "" + se.stackTrace)
+                }
+                catch (e: Exception){
+                    Log.d(tAG, "listenerSocket Exception e: "
+                            + e.message + "" + e.stackTrace)
+                }
             }
         }
     }
@@ -104,6 +121,7 @@ class XyUdpComm(
     private val socketList = mutableListOf<DatagramSocket>()
     override fun clean() {
         //clean listener socket
+        Log.d(tAG, "clean(): why?")
         inListening = false
         listenerSocket?.close()
         listenerSocket=null

@@ -37,10 +37,11 @@ class XyFileService : Service()  {
     private val job = SupervisorJob()
     private val receiveScope = CoroutineScope(Dispatchers.IO + job)
 
-    private var droidFolderComm: DroidFolderComm? = null
     companion object {
 
         const val PC_ADDRESS = "pcAddress"
+
+        private var droidFolderComm: DroidFolderComm? = null
 
         // The UI collects from this StateFlow to get its state updates
         val ServiceState: MutableStateFlow<XyFileServiceState> = MutableStateFlow(XyFileServiceState(
@@ -153,10 +154,9 @@ class XyFileService : Service()  {
     }
 
     override fun onDestroy() {
-        //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
-        droidFolderComm?.clean()
-        cancelNotification()
-        changeRunningState(false)
+        //droidFolderComm?.clean()
+        //cancelNotification()
+        //changeRunningState(false)
     }
 
     fun getDeviceName(): String {
