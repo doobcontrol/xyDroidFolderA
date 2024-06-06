@@ -32,6 +32,7 @@ import com.xySoft.xydroidfolder.ui.theme.XyDroidFolderATheme
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanCustomCode
 import io.github.g00fy2.quickie.config.ScannerConfig
+import java.text.DecimalFormat
 
 @Composable
 fun MainScreen(
@@ -126,7 +127,8 @@ fun MainScreenStateless(
                 if(inFileTransfer){
                     val progress = mainScreenState.fileProgress.toFloat() /
                             mainScreenState.fileTransInfo!!.totalLong
-                    Text("Progress: $progress(${mainScreenState.fileProgress} " +
+                    val percentage =  DecimalFormat("00.00").format(progress * 100)
+                    Text("$percentage(${mainScreenState.fileProgress} " +
                             "/ ${mainScreenState.fileTransInfo.totalLong})")
                     LinearProgressIndicator(
                         progress = progress,
