@@ -42,6 +42,7 @@ fun MainScreen(
 
     val isServiceRunning = mainScreenState.isRunning
     val messages = mainScreenState.messages
+    val stopService: () -> Unit = { viewModel.stopService() }
 
     var scanQrCodeInfo by rememberSaveable { mutableStateOf<String?>(null) }
     val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
@@ -80,6 +81,11 @@ fun MainScreen(
         }
         else{
             Text("target: "  + (scanQrCodeInfo?: "No QR Code"))
+
+            Button(onClick = stopService
+            ) {
+                Text("Stop")
+            }
 
             val inFileTransfer = mainScreenState.inFileTransfer
             if(inFileTransfer){

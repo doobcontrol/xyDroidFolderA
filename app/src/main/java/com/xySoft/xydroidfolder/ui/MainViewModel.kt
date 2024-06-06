@@ -24,6 +24,9 @@ class MainViewModel : ViewModel() {
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = MainScreenState(messages = mutableListOf())
         )
+    fun stopService() {
+        XyFileService.stopService()
+    }
 }
 
 data class MainScreenState(

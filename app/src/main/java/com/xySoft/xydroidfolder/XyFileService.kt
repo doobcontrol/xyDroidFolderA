@@ -61,6 +61,23 @@ class XyFileService : Service()  {
                 messages = messages,
             )
         }
+
+        fun stopService(){
+            droidFolderComm?.clean()
+            droidFolderComm = null
+            cancelNotification()
+            changeRunningState(false)
+            ServiceState.value.messages.clear()
+        }
+
+        //region: Persistent service icon in notification bar
+
+        private val NOTIFICATION: Int = 1
+        private var mNotificationManager: NotificationManager? = null
+        private fun cancelNotification() {
+            mNotificationManager?.cancel(NOTIFICATION)
+        }
+        //endregion
     }
 
     private var serviceLooper: Looper? = null
@@ -105,6 +122,7 @@ class XyFileService : Service()  {
                             setupNotifications()
                             showNotification()
                         }
+                        changeRunningState(true)
                     }
                 }
             } catch (e: InterruptedException) {
@@ -130,7 +148,6 @@ class XyFileService : Service()  {
             serviceLooper = looper
             serviceHandler = ServiceHandler(looper)
         }
-        changeRunningState(true)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -154,9 +171,6 @@ class XyFileService : Service()  {
     }
 
     override fun onDestroy() {
-        //droidFolderComm?.clean()
-        //cancelNotification()
-        //changeRunningState(false)
     }
 
     fun getDeviceName(): String {
@@ -256,11 +270,9 @@ class XyFileService : Service()  {
     }
 
     //region: Persistent service icon in notification bar
-    private val NOTIFICATION: Int = 1
     private val CLOSE_ACTION: String = "close"
     private val CHANNEL_ID: String = "my_channel_id_01"
 
-    private var mNotificationManager: NotificationManager? = null
     private var mNotificationBuilder: NotificationCompat.Builder? = null
     private fun setupNotifications() { //called in onCreate()
         if (mNotificationManager == null) {
@@ -302,12 +314,6 @@ class XyFileService : Service()  {
             .setTicker("test1")
             .setContentText("test2")
         mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
-    }
-    private fun cancelNotification() {
-        if (mNotificationManager == null) {
-            mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        }
-        mNotificationManager?.cancel(NOTIFICATION)
     }
 
     private fun createNotificationChannel(){
