@@ -30,7 +30,6 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.SocketException
 
-
 class XyFileService : Service()  {
     val tAG: String = "XyFileService"
 
@@ -72,7 +71,7 @@ class XyFileService : Service()  {
 
         //region: Persistent service icon in notification bar
 
-        private val NOTIFICATION: Int = 1
+        private const val NOTIFICATION: Int = 1
         private var mNotificationManager: NotificationManager? = null
         private fun cancelNotification() {
             mNotificationManager?.cancel(NOTIFICATION)
@@ -120,7 +119,13 @@ class XyFileService : Service()  {
                                     + commResult.resultDataDic[CmdPar.returnMsg])
 
                             setupNotifications()
-                            showNotification()
+                            showNotification(
+                                buildString {
+                                    append(targetAddress)
+                                    append(" ")
+                                    append(commResult.resultDataDic[CmdPar.returnMsg])
+                                }
+                            )
                         }
                         changeRunningState(true)
                     }
@@ -299,27 +304,27 @@ class XyFileService : Service()  {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentTitle("Open")
+            .setContentTitle("Connect to PC")
             .setWhen(System.currentTimeMillis())
             .setContentIntent(pendingIntent)
             .addAction(
                 R.drawable.ic_launcher_foreground,
-                "Open", pendingCloseIntent
+                "Stop", pendingCloseIntent
             )
             .setOngoing(true)
     }
 
-    private fun showNotification() {
+    private fun showNotification(message: String?) {
         mNotificationBuilder!!
-            .setTicker("test1")
-            .setContentText("test2")
+            .setTicker(message)
+            .setContentText(message)
         mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
     }
 
     private fun createNotificationChannel(){
         // Create the NotificationChannel.
-        val name = "myChnnel"
-        val descriptionText = "myChnnel descriptionText"
+        val name = "myChannel"
+        val descriptionText = "myChannel descriptionText"
         val importance = NotificationManager.IMPORTANCE_DEFAULT
         val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
         mChannel.description = descriptionText

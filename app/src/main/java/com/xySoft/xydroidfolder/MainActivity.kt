@@ -27,6 +27,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { //Android 13 sdk 33
+            pushNotificationPermissionLauncher.launch(permission.POST_NOTIFICATIONS)
+        }
         if(!checkStoragePermissions()){
             requestForStoragePermissions()
         }
@@ -92,7 +95,11 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             Log.d(tAG, "$result")
         }
+    private val pushNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { //granted ->
 
+    }
     private fun startFileService(pcAddress: String){
         val intent = Intent(this, XyFileService::class.java)
         intent.putExtra(XyFileService.PC_ADDRESS, pcAddress)
