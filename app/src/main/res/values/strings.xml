@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">xyFileShareTool</string>
-    <string name="scan_barcode" translatable="false">Scan barcode</string>
+    <string name="scan_barcode">Scan barcode</string>
+    <string name="targetPC">"target: "</string>
+    <string name="stopService">Stop</string>
+    <string name="register_response">"register response: "</string>
+    <string name="init_folder">init folder: </string>
+    <string name="list_request">folder: %1$s</string>
+    <string name="receive_file">receive file: %1$s</string>
+    <string name="send_file">send file: %1$s</string>
+    <string name="file_transfer_finish">finish</string>
 </resources>

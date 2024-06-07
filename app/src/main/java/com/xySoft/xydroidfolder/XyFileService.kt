@@ -115,7 +115,8 @@ class XyFileService : Service()  {
                             )
                             Log.d(tAG, "commResult: "
                                     + commResult.resultDataDic[CmdPar.returnMsg])
-                            addStateMessage("other side response: "
+                            addStateMessage(
+                                getString(R.string.register_response)
                                     + commResult.resultDataDic[CmdPar.returnMsg])
 
                             setupNotifications()
@@ -222,17 +223,30 @@ class XyFileService : Service()  {
     fun xyCommRequestHandler(commData: CommData, commResult: CommResult){
         when(commData.cmd){
             DroidFolderCmd.GetInitFolder -> {
-                addStateMessage("list request: root")
+                addStateMessage(getString(R.string.init_folder))
             }
             DroidFolderCmd.GetFolder -> {
-                addStateMessage("list request: ${
-                    (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")
-                }")
+                addStateMessage(
+                    getString(
+                        R.string.list_request,
+                        (commData.cmdParDic[CmdPar.requestPath]?.replace("\\", "/") ?: "")
+                    ))
             }
             DroidFolderCmd.SendFile -> {
-                addStateMessage("receive file: ${
-                    (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "")
-                }")
+                addStateMessage(
+                    getString(
+                        R.string.receive_file,
+                        (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "").split("/").last()
+                    ))
+
+                commResult.resultDataDic[CmdPar.streamReceiverPar] = "12922"
+            }
+            DroidFolderCmd.GetFile -> {
+                addStateMessage(
+                    getString(
+                        R.string.send_file,
+                        (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "").split("/").last()
+                    ))
 
                 commResult.resultDataDic[CmdPar.streamReceiverPar] = "12922"
             }
@@ -264,6 +278,16 @@ class XyFileService : Service()  {
                     inFileTransfer = false,
                     fileProgress = 0,
                     fileTransInfo = null
+                )
+                addStateMessage(
+                    if(fileInOut == FileInOut.In)
+                        getString(
+                            R.string.receive_file, getString(R.string.file_transfer_finish)
+                        )
+                    else
+                        getString(
+                            R.string.send_file, getString(R.string.file_transfer_finish)
+                        )
                 )
             }
             FileTransEventType.Progress -> {

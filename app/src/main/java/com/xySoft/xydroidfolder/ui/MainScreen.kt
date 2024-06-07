@@ -99,7 +99,9 @@ fun MainScreenStateless(
     Column(
     verticalArrangement = Arrangement.Center,
     horizontalAlignment = Alignment.CenterHorizontally,
-    modifier = modifier.fillMaxSize().padding(8.dp)
+    modifier = modifier
+        .fillMaxSize()
+        .padding(8.dp)
     ) {
         if(!isServiceRunning){
             Image(
@@ -111,18 +113,20 @@ fun MainScreenStateless(
             }
         }
         else{
-            Spacer(modifier = Modifier.padding(8.dp).weight(1f))
+            Spacer(modifier = Modifier
+                .padding(8.dp)
+                .weight(1f))
 
             Column(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = modifier.height(112.dp)
             ) {
-                Text("target: "  + (scanQrCodeInfo?: "No QR Code"))
+                Text(stringResource(R.string.targetPC)  + (scanQrCodeInfo?: "No QR Code"))
 
                 Button(onClick = stopService
                 ) {
-                    Text("Stop")
+                    Text(stringResource(R.string.stopService))
                 }
 
                 val inFileTransfer = mainScreenState.inFileTransfer
@@ -134,13 +138,19 @@ fun MainScreenStateless(
                             "/ ${mainScreenState.fileTransInfo.totalLong})")
                     LinearProgressIndicator(
                         progress = progress,
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.padding(8.dp).weight(1f))
-            LazyColumn(modifier = Modifier.padding(8.dp).weight(1f)) {
+            Spacer(modifier = Modifier
+                .padding(8.dp)
+                .weight(1f))
+            LazyColumn(modifier = Modifier
+                .padding(8.dp)
+                .weight(1f)) {
                 messages.forEach {
                     item {
                         Text(it)

@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">文件共享工具</string>
-    <string name="scan_barcode" translatable="false">扫描条码</string>
+    <string name="scan_barcode">扫描条码</string>
+    <string name="targetPC">"已连接： "</string>
+    <string name="stopService">断开连接</string>
+    <string name="register_response">"连接电脑: "</string>
+    <string name="init_folder">根目录: </string>
+    <string name="list_request">目录: %1$s</string>
+    <string name="receive_file">接收文件: %1$s</string>
+    <string name="send_file">发送文件: %1$s</string>
+    <string name="file_transfer_finish">完成</string>
 </resources>
