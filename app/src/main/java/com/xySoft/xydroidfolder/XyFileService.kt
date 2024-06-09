@@ -4,6 +4,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
@@ -249,6 +252,15 @@ class XyFileService : Service()  {
                     ))
 
                 commResult.resultDataDic[CmdPar.streamReceiverPar] = "12922"
+            }
+            DroidFolderCmd.SendText -> {
+                val text = commData.cmdParDic[CmdPar.text]
+                addStateMessage(getString(R.string.receive_text_copy_to_clipboard))
+
+                // Creates a new text clip to put on the clipboard.
+                val clip = ClipData.newPlainText("sync text", text)
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(clip)
             }
             else -> {}
         }

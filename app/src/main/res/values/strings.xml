@@ -9,4 +9,5 @@
     <string name="receive_file">receive file: %1$s</string>
     <string name="send_file">send file: %1$s</string>
     <string name="file_transfer_finish">finish</string>
+    <string name="receive_text_copy_to_clipboard">receive text copy to clipboard</string>
 </resources>

@@ -17,6 +17,36 @@ class DroidFolderComm(
 
     private val myXyUdpComm: IXyComm
 
+    companion object {
+        private val encodeDic: MutableMap<String, String> = mutableMapOf(
+            Pair(",", "xyCommA"),
+            Pair("=", "xyEquaL"),
+        )
+        private val decodeDic : MutableMap<String, String> = mutableMapOf(
+            Pair("xyCommA", ","),
+            Pair("xyEquaL", "="),
+        )
+
+        fun encodeParString(parString: String): String
+        {
+            return stringReplace(parString, encodeDic)
+        }
+        fun decodeParString(parString: String): String
+        {
+            return stringReplace(parString, decodeDic)
+        }
+        private fun stringReplace(rString: String,
+                                  rDic: MutableMap<String, String>): String
+        {
+            var retString = rString
+
+            rDic.forEach {
+                retString = retString.replace(it.key, it.value)
+            }
+            return retString
+        }
+    }
+
     init {
         myXyUdpComm = XyUdpComm(
             localIp, localPort,
@@ -60,6 +90,10 @@ class DroidFolderComm(
         val commData = CommData.fromCommPkgString(receivedString)
         val commResult = CommResult(commData.cmdID)
 
+        if(commData.cmdParDic.containsKey(CmdPar.text)){
+            commData.cmdParDic[CmdPar.text] =
+                decodeParString(commData.cmdParDic[CmdPar.text]!!)
+        }
         xyCommRequestHandler(commData, commResult)
 
         val directory =
@@ -133,6 +167,9 @@ class DroidFolderComm(
                     )
                 }
             }
+            DroidFolderCmd.SendText -> {
+                //
+            }
             else -> {}
         }
 
@@ -186,7 +223,8 @@ enum class DroidFolderCmd {
     GetInitFolder,
     GetFolder,
     GetFile,
-    SendFile
+    SendFile,
+    SendText
 }
 enum class CmdPar {
     cmd,
@@ -197,6 +235,7 @@ enum class CmdPar {
     hostName,
     requestPath,
     targetFile,
+    text,
     fileLength,
     streamReceiverPar,
     folders,
