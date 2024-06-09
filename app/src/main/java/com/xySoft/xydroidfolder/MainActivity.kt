@@ -34,11 +34,20 @@ class MainActivity : ComponentActivity() {
             requestForStoragePermissions()
         }
 
+        var sharedText: String? = null
+        if(intent?.action == Intent.ACTION_SEND) {
+            if (intent.type?.startsWith("text/") == true) {
+                sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                Log.d(tAG, "Shared text from intent: $sharedText")
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             XyDroidFolderATheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
+                        sharedText = sharedText,
                         startFileService = { startFileService(it) },
                         modifier = Modifier.padding(innerPadding)
                     )

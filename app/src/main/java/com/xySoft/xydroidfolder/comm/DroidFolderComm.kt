@@ -85,6 +85,15 @@ class DroidFolderComm(
 
         return request(commData)
     }
+    suspend fun sendText(text: String): CommResult
+    {
+        val cmdParDic = mutableMapOf<CmdPar, String>()
+        cmdParDic[CmdPar.text] = encodeParString(text)
+
+        val commData = CommData(DroidFolderCmd.SendText, cmdParDic)
+        Log.d(tAG, text)
+        return request(commData)
+    }
 
     private fun xyCommRequestHandler(receivedString: String): String{
         val commData = CommData.fromCommPkgString(receivedString)

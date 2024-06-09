@@ -71,6 +71,11 @@ class XyFileService : Service()  {
             changeRunningState(false)
             ServiceState.value.messages.clear()
         }
+        fun sendText(text: String) {
+            CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+                droidFolderComm?.sendText(text)
+            }
+        }
 
         //region: Persistent service icon in notification bar
 

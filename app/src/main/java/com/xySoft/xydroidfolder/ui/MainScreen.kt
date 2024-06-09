@@ -1,5 +1,6 @@
 package com.xySoft.xydroidfolder.ui
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import java.text.DecimalFormat
 
 @Composable
 fun MainScreen(
+    sharedText: String?,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = viewModel(),
     startFileService: (String) -> Unit = {}
@@ -74,6 +76,14 @@ fun MainScreen(
         ScannerConfig.build {
             setOverlayStringRes(R.string.scan_barcode) // string resource used for the scanner overlay
         })
+    }
+
+    var inputSharedText by rememberSaveable { mutableStateOf(sharedText) }
+    if(!inputSharedText.isNullOrEmpty()
+        && mainScreenState.isRunning){
+        Log.d("MainScreen", "Send shared text: $sharedText")
+        viewModel.sendText(inputSharedText.toString())
+        inputSharedText = null
     }
 
     MainScreenStateless(
