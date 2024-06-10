@@ -53,6 +53,9 @@ class XyFileService : Service()  {
         fun changeRunningState(isRunning: Boolean){
             ServiceState.value = ServiceState.value.copy(isRunning = isRunning)
         }
+        fun setTargetPC(targetPC: String){
+            ServiceState.value = ServiceState.value.copy(targetPC = targetPC)
+        }
         fun addStateMessage(message: String){
             val messages = ServiceState.value.messages.toMutableList()
             messages.add(message)
@@ -136,6 +139,7 @@ class XyFileService : Service()  {
                                 }
                             )
                         }
+                        setTargetPC(targetAddress)
                         changeRunningState(true)
                     }
                 }
@@ -379,6 +383,7 @@ class XyFileService : Service()  {
 
 data class XyFileServiceState(
     val isRunning: Boolean = false,
+    val targetPC: String = "",
     val messages: MutableList<String>,
     val inFileTransfer: Boolean = false,
     val isFileIn: Boolean = false,

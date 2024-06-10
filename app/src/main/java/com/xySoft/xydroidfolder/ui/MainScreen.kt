@@ -1,6 +1,9 @@
 package com.xySoft.xydroidfolder.ui
 
+import android.net.InetAddresses
+import android.os.Build
 import android.util.Log
+import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -51,23 +54,56 @@ fun MainScreen(
 
     val stopService: () -> Unit = { viewModel.stopService() }
 
-    var scanQrCodeInfo by rememberSaveable { mutableStateOf<String?>(null) }
+    var scanErrorInfo by rememberSaveable { mutableStateOf("") }
     val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
     { result ->
         // handle QRResult
         when(result){
             is QRResult.QRSuccess -> {
-                scanQrCodeInfo=result.content.rawValue
-                scanQrCodeInfo?.let { startFileService(it) }
+                val scanQrCodeInfo = result.content.rawValue
+                var isValidIpaddress = false
+                if(!scanQrCodeInfo.isNullOrEmpty()) {
+                    val ipInfoList = scanQrCodeInfo.split(":")
+                    if (ipInfoList.size >= 2) {
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            if (InetAddresses.isNumericAddress(ipInfoList[0])) {
+                                isValidIpaddress = true
+                            }
+                        }
+                        else {
+                            if (Patterns.IP_ADDRESS.matcher(ipInfoList[0]).matches()) {
+                                isValidIpaddress = true
+                            }
+                        }
+                        if (isValidIpaddress) {
+                            var portValid = false
+                            if(ipInfoList[1].toIntOrNull() != null
+                                && ipInfoList[1].toInt() in 0..65535){
+                                portValid = true
+                            }
+                            if(!portValid){
+                                isValidIpaddress = false
+                            }
+                        }
+                    }
+                }
+
+                if(isValidIpaddress){
+                    scanErrorInfo = ""
+                    scanQrCodeInfo?.let { startFileService(it) }
+                }
+                else{
+                    scanErrorInfo = "Invalid IP address: $scanQrCodeInfo"
+                }
             }
             is QRResult.QRUserCanceled -> {
-                scanQrCodeInfo="QRUserCanceled"
+                // User canceled
             }
             is QRResult.QRMissingPermission  -> {
-                scanQrCodeInfo="QRMissingPermission"
+                scanErrorInfo = "QRMissingPermission"
             }
             is QRResult.QRError -> {
-                scanQrCodeInfo="QRError"
+                scanErrorInfo = "QRError"
             }
         }
     }
@@ -87,9 +123,9 @@ fun MainScreen(
     }
 
     MainScreenStateless(
+        scanErrorInfo = scanErrorInfo,
         mainScreenState = mainScreenState,
         stopService = stopService,
-        scanQrCodeInfo = scanQrCodeInfo,
         barCodeButtonClick = barCodeButtonClick,
         modifier = modifier
     )
@@ -99,9 +135,9 @@ fun MainScreen(
 fun MainScreenStateless(
     mainScreenState: MainScreenState,
     stopService: () -> Unit,
-    scanQrCodeInfo: String?,
     barCodeButtonClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scanErrorInfo: String = ""
 ){
     val isServiceRunning = mainScreenState.isRunning
     val messages = mainScreenState.messages
@@ -121,6 +157,9 @@ fun MainScreenStateless(
             Button(onClick = barCodeButtonClick) {
                 Text(stringResource(R.string.scan_barcode))
             }
+            if(scanErrorInfo.isNotEmpty()){
+                Text(scanErrorInfo)
+            }
         }
         else{
             Spacer(modifier = Modifier
@@ -132,7 +171,7 @@ fun MainScreenStateless(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = modifier.height(112.dp)
             ) {
-                Text(stringResource(R.string.targetPC)  + (scanQrCodeInfo?: "No QR Code"))
+                Text(stringResource(R.string.targetPC)  + mainScreenState.targetPC)
 
                 Button(onClick = stopService
                 ) {
@@ -187,7 +226,6 @@ fun GreetingPreviewNotRunning() {
             MainScreenStateless(
                 mainScreenState = mainScreenState,
                 stopService = { },
-                scanQrCodeInfo = null,
                 barCodeButtonClick = { },
                 modifier = Modifier.padding(innerPadding)
             )
@@ -198,7 +236,6 @@ fun GreetingPreviewNotRunning() {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreviewRunning() {
-    val scanQrCodeInfo = "192.168.3.100:8080"
     val messages = mutableListOf(
         "request E:\\hb\\VmUse\\PerVm\\ubuntu\\temp",
         "request E:\\hb\\VmUse\\PerVm\\ubuntu\\temp",
@@ -216,6 +253,7 @@ fun GreetingPreviewRunning() {
     )
     val mainScreenState = MainScreenState(
         isRunning = true,
+        targetPC= "192.168.3.100:8080",
         messages = messages,
         inFileTransfer = true,
         isFileIn = false,
@@ -227,7 +265,6 @@ fun GreetingPreviewRunning() {
             MainScreenStateless(
                 mainScreenState = mainScreenState,
                 stopService = { },
-                scanQrCodeInfo = scanQrCodeInfo,
                 barCodeButtonClick = { },
                 modifier = Modifier.padding(innerPadding)
             )
