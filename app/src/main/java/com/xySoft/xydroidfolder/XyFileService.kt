@@ -17,6 +17,7 @@ import android.os.Message
 import android.os.Process
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat.getSystemService
 import com.xySoft.xydroidfolder.comm.CmdPar
 import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
@@ -74,6 +75,7 @@ class XyFileService : Service()  {
             changeRunningState(false)
             ServiceState.value.messages.clear()
         }
+
         fun sendText(text: String) {
             CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
                 droidFolderComm?.sendText(text)

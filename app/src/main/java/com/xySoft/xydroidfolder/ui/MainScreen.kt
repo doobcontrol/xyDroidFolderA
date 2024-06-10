@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,6 +45,7 @@ fun MainScreen(
     sharedText: String?,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = viewModel(),
+    pasteToPc: () -> Unit = {},
     startFileService: (String) -> Unit = {}
 ) {
     val mainScreenState: MainScreenState by viewModel.mainScreenState.collectAsStateWithLifecycle(
@@ -127,6 +129,7 @@ fun MainScreen(
         mainScreenState = mainScreenState,
         stopService = stopService,
         barCodeButtonClick = barCodeButtonClick,
+        pasteButtonClick = pasteToPc,
         modifier = modifier
     )
 }
@@ -135,8 +138,9 @@ fun MainScreen(
 fun MainScreenStateless(
     mainScreenState: MainScreenState,
     stopService: () -> Unit,
-    barCodeButtonClick: () -> Unit,
     modifier: Modifier = Modifier,
+    pasteButtonClick: () -> Unit = {},
+    barCodeButtonClick: () -> Unit = {},
     scanErrorInfo: String = ""
 ){
     val isServiceRunning = mainScreenState.isRunning
@@ -171,11 +175,19 @@ fun MainScreenStateless(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = modifier.height(112.dp)
             ) {
-                Text(stringResource(R.string.targetPC)  + mainScreenState.targetPC)
+                Text(stringResource(R.string.targetPC) + mainScreenState.targetPC)
 
-                Button(onClick = stopService
-                ) {
-                    Text(stringResource(R.string.stopService))
+                Row {
+                    Button(
+                        onClick = stopService
+                    ) {
+                        Text(stringResource(R.string.stopService))
+                    }
+                    Button(
+                        onClick = pasteButtonClick
+                    ) {
+                        Text(stringResource(R.string.paste))
+                    }
                 }
 
                 val inFileTransfer = mainScreenState.inFileTransfer

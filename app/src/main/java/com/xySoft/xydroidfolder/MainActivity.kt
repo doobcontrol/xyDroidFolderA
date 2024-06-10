@@ -1,6 +1,9 @@
 package com.xySoft.xydroidfolder
 
 import android.Manifest.permission
+import android.content.ClipDescription.MIMETYPE_TEXT_PLAIN
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -49,6 +52,7 @@ class MainActivity : ComponentActivity() {
                     MainScreen(
                         sharedText = sharedText,
                         startFileService = { startFileService(it) },
+                        pasteToPc = ::pasteToPc,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -113,5 +117,19 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, XyFileService::class.java)
         intent.putExtra(XyFileService.PC_ADDRESS, pcAddress)
         startService(Intent(intent))
+    }
+    private fun pasteToPc() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        if(clipboard.hasPrimaryClip()
+            && clipboard.primaryClipDescription?.hasMimeType(MIMETYPE_TEXT_PLAIN) == true
+            ){
+            val item = clipboard.primaryClip!!.getItemAt(0)
+
+            val pasteText = item.text
+            if (pasteText != null) {
+                XyFileService.sendText(pasteText.toString())
+            }
+        }
     }
 }
