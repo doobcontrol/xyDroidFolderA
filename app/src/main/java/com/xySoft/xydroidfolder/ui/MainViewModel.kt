@@ -14,6 +14,7 @@ class MainViewModel : ViewModel() {
         XyFileService.ServiceState.map {
             MainScreenState(
                 isRunning = it.isRunning,
+                connectError = it.connectError,
                 targetPC= it.targetPC,
                 messages = it.messages,
                 inFileTransfer = it.inFileTransfer,
@@ -36,6 +37,7 @@ class MainViewModel : ViewModel() {
 
 data class MainScreenState(
     val isRunning: Boolean = false,
+    val connectError: String? = null,
     val targetPC: String = "",
     val messages: MutableList<String>,
     val inFileTransfer: Boolean = false,

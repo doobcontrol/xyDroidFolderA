@@ -56,7 +56,10 @@ fun MainScreen(
 
     val stopService: () -> Unit = { viewModel.stopService() }
 
-    var scanErrorInfo by rememberSaveable { mutableStateOf("") }
+    var connectErrorInfo by rememberSaveable { mutableStateOf("") }
+    if(!mainScreenState.connectError.isNullOrBlank()){
+        connectErrorInfo = mainScreenState.connectError!!
+    }
     val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
     { result ->
         // handle QRResult
@@ -91,21 +94,21 @@ fun MainScreen(
                 }
 
                 if(isValidIpaddress){
-                    scanErrorInfo = ""
+                    connectErrorInfo = ""
                     scanQrCodeInfo?.let { startFileService(it) }
                 }
                 else{
-                    scanErrorInfo = "Invalid IP address: $scanQrCodeInfo"
+                    connectErrorInfo = "Invalid IP address: $scanQrCodeInfo"
                 }
             }
             is QRResult.QRUserCanceled -> {
                 // User canceled
             }
             is QRResult.QRMissingPermission  -> {
-                scanErrorInfo = "QRMissingPermission"
+                connectErrorInfo = "QRMissingPermission"
             }
             is QRResult.QRError -> {
-                scanErrorInfo = "QRError"
+                connectErrorInfo = "QRError"
             }
         }
     }
@@ -125,7 +128,7 @@ fun MainScreen(
     }
 
     MainScreenStateless(
-        scanErrorInfo = scanErrorInfo,
+        connectErrorInfo = connectErrorInfo,
         mainScreenState = mainScreenState,
         stopService = stopService,
         barCodeButtonClick = barCodeButtonClick,
@@ -141,7 +144,7 @@ fun MainScreenStateless(
     modifier: Modifier = Modifier,
     pasteButtonClick: () -> Unit = {},
     barCodeButtonClick: () -> Unit = {},
-    scanErrorInfo: String = ""
+    connectErrorInfo: String = ""
 ){
     val isServiceRunning = mainScreenState.isRunning
     val messages = mainScreenState.messages
@@ -161,8 +164,8 @@ fun MainScreenStateless(
             Button(onClick = barCodeButtonClick) {
                 Text(stringResource(R.string.scan_barcode))
             }
-            if(scanErrorInfo.isNotEmpty()){
-                Text(scanErrorInfo)
+            if(connectErrorInfo.isNotEmpty()){
+                Text(connectErrorInfo)
             }
         }
         else{

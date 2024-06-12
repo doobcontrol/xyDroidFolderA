@@ -17,7 +17,6 @@ import android.os.Message
 import android.os.Process
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.getSystemService
 import com.xySoft.xydroidfolder.comm.CmdPar
 import com.xySoft.xydroidfolder.comm.CommData
 import com.xySoft.xydroidfolder.comm.CommResult
@@ -41,7 +40,7 @@ class XyFileService : Service()  {
     private val receiveScope = CoroutineScope(Dispatchers.IO + job)
 
     companion object {
-
+        var instance: XyFileService? = null
         const val PC_ADDRESS = "pcAddress"
 
         private var droidFolderComm: DroidFolderComm? = null
@@ -53,6 +52,9 @@ class XyFileService : Service()  {
 
         fun changeRunningState(isRunning: Boolean){
             ServiceState.value = ServiceState.value.copy(isRunning = isRunning)
+        }
+        fun setConnectError(connectError: String?){
+            ServiceState.value = ServiceState.value.copy(connectError = connectError)
         }
         fun setTargetPC(targetPC: String){
             ServiceState.value = ServiceState.value.copy(targetPC = targetPC)
@@ -78,7 +80,12 @@ class XyFileService : Service()  {
 
         fun sendText(text: String) {
             CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-                droidFolderComm?.sendText(text)
+                try{
+                    droidFolderComm?.sendText(text)
+                    addStateMessage(instance!!.getString(R.string.send_succeed))
+                }catch (e: Exception){
+                    addStateMessage(instance!!.getString(R.string.send_failed, e.message))
+                }
             }
         }
 
@@ -120,29 +127,35 @@ class XyFileService : Service()  {
                                 ::fileTransEventHandler
                             )
                         }
-
+                        setConnectError(getString(R.string.connecting))
                         receiveScope.launch {
-                            val commResult = droidFolderComm!!.register(
-                                ipAddress, 12921,
-                                getDeviceName()
-                            )
-                            Log.d(tAG, "commResult: "
-                                    + commResult.resultDataDic[CmdPar.returnMsg])
-                            addStateMessage(
-                                getString(R.string.register_response)
-                                    + commResult.resultDataDic[CmdPar.returnMsg])
+                            try{
+                                val commResult = droidFolderComm!!.register(
+                                    ipAddress, 12921,
+                                    getDeviceName()
+                                )
+                                Log.d(tAG, "commResult: "
+                                        + commResult.resultDataDic[CmdPar.returnMsg])
+                                addStateMessage(
+                                    getString(R.string.register_response)
+                                            + commResult.resultDataDic[CmdPar.returnMsg])
 
-                            setupNotifications()
-                            showNotification(
-                                buildString {
-                                    append(targetAddress)
-                                    append(" ")
-                                    append(commResult.resultDataDic[CmdPar.returnMsg])
-                                }
-                            )
+                                setupNotifications()
+                                showNotification(
+                                    buildString {
+                                        append(targetAddress)
+                                        append(" ")
+                                        append(commResult.resultDataDic[CmdPar.returnMsg])
+                                    }
+                                )
+                                setTargetPC(targetAddress)
+                                changeRunningState(true)
+                            }catch (e: Exception){
+                                droidFolderComm?.clean()
+                                droidFolderComm = null
+                                setConnectError(getString(R.string.connect_failed, e.message))
+                            }
                         }
-                        setTargetPC(targetAddress)
-                        changeRunningState(true)
                     }
                 }
             } catch (e: InterruptedException) {
@@ -168,6 +181,7 @@ class XyFileService : Service()  {
             serviceLooper = looper
             serviceHandler = ServiceHandler(looper)
         }
+        instance = this
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -191,6 +205,7 @@ class XyFileService : Service()  {
     }
 
     override fun onDestroy() {
+        instance = null
     }
 
     fun getDeviceName(): String {
@@ -385,6 +400,7 @@ class XyFileService : Service()  {
 
 data class XyFileServiceState(
     val isRunning: Boolean = false,
+    val connectError: String? = null,
     val targetPC: String = "",
     val messages: MutableList<String>,
     val inFileTransfer: Boolean = false,

@@ -11,4 +11,8 @@
     <string name="file_transfer_finish">finish</string>
     <string name="receive_text_copy_to_clipboard">receive text copy to clipboard</string>
     <string name="paste">Paste</string>
+    <string name="connecting">Connecting…</string>
+    <string name="connect_failed">Connect failed: %1$s</string>
+    <string name="send_succeed">Send clipboard text succeed</string>
+    <string name="send_failed">Send failed: %1$s</string>
 </resources>

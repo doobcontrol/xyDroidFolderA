@@ -99,18 +99,11 @@ class XyUdpComm(
         withContext(Dispatchers.IO) {
             socket.send(sendPacket)
         }
-        Log.d(tAG, "sent packet")
 
-        Log.d(tAG, "start receive ...")
         withContext(Dispatchers.IO) {
             socket.receive(receivePacket)
         }
         Log.d(tAG, "end receive")
-        Log.d(
-            tAG, "received: "
-                    + receiveBuffer.copyOfRange(0, receivePacket.length)
-                .toString(Charsets.UTF_8)
-        )
 
         socket.close()
         socketList.remove(socket)
