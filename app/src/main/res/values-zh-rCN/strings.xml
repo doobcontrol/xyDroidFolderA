@@ -16,4 +16,5 @@
     <string name="connect_failed">连接失败: %1$s</string>
     <string name="send_succeed">发送剪贴板文本成功</string>
     <string name="send_failed">发送剪贴板文本失败: %1$s</string>
+    <string name="disconnected">已断开连接</string>
 </resources>

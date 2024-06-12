@@ -75,6 +75,7 @@ class XyFileService : Service()  {
             droidFolderComm = null
             cancelNotification()
             changeRunningState(false)
+            setConnectError(instance!!.getString(R.string.disconnected))
             ServiceState.value.messages.clear()
         }
 
@@ -150,6 +151,7 @@ class XyFileService : Service()  {
                                 )
                                 setTargetPC(targetAddress)
                                 changeRunningState(true)
+                                setConnectError(null)
                             }catch (e: Exception){
                                 droidFolderComm?.clean()
                                 droidFolderComm = null
