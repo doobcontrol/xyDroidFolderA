@@ -29,10 +29,6 @@ class MainViewModel : ViewModel() {
     fun stopService() {
         XyFileService.stopService()
     }
-
-    fun sendText(text: String) {
-        XyFileService.sendText(text)
-    }
 }
 
 data class MainScreenState(

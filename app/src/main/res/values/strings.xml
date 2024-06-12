@@ -13,7 +13,8 @@
     <string name="paste">Paste</string>
     <string name="connecting">Connecting…</string>
     <string name="connect_failed">Connect failed: %1$s</string>
-    <string name="send_succeed">Send clipboard text succeed</string>
-    <string name="send_failed">Send failed: %1$s</string>
+    <string name="send_succeed">Send share content succeed</string>
+    <string name="send_failed">Send share content failed: %1$s</string>
     <string name="disconnected">Disconnected</string>
+    <string name="title_activity_send">SendActivity</string>
 </resources>

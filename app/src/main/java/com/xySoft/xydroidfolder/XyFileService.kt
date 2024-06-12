@@ -43,6 +43,9 @@ class XyFileService : Service()  {
         var instance: XyFileService? = null
         const val PC_ADDRESS = "pcAddress"
 
+        var initDataTask: String? = InitDataTask.NONE.toString()
+        var initTaskPars: String? = null
+
         private var droidFolderComm: DroidFolderComm? = null
 
         // The UI collects from this StateFlow to get its state updates
@@ -83,6 +86,17 @@ class XyFileService : Service()  {
             CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
                 try{
                     droidFolderComm?.sendText(text)
+                    addStateMessage(instance!!.getString(R.string.send_succeed))
+                }catch (e: Exception){
+                    addStateMessage(instance!!.getString(R.string.send_failed, e.message))
+                }
+            }
+        }
+
+        fun sendFile(file: String) {
+            CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+                try{
+                    droidFolderComm?.sendFile(file)
                     addStateMessage(instance!!.getString(R.string.send_succeed))
                 }catch (e: Exception){
                     addStateMessage(instance!!.getString(R.string.send_failed, e.message))
@@ -152,7 +166,23 @@ class XyFileService : Service()  {
                                 setTargetPC(targetAddress)
                                 changeRunningState(true)
                                 setConnectError(null)
+
+                                //do init task
+                                Log.d(tAG, "do init task")
+                                when(initDataTask){
+                                    InitDataTask.Text.toString() -> {
+                                        Log.d(tAG, "sendText(initTaskPars!!)")
+                                        sendText(initTaskPars!!)
+                                    }
+                                    InitDataTask.File.toString() -> {
+                                        Log.d(tAG, "sendFile(initTaskPars!!)")
+                                        sendFile(initTaskPars!!)
+                                    }
+                                }
+
                             }catch (e: Exception){
+                                Log.d(tAG, "Exception: "
+                                        + e.message)
                                 droidFolderComm?.clean()
                                 droidFolderComm = null
                                 setConnectError(getString(R.string.connect_failed, e.message))
@@ -278,8 +308,6 @@ class XyFileService : Service()  {
                         R.string.send_file,
                         (commData.cmdParDic[CmdPar.targetFile]?.replace("\\", "/") ?: "").split("/").last()
                     ))
-
-                commResult.resultDataDic[CmdPar.streamReceiverPar] = "12922"
             }
             DroidFolderCmd.SendText -> {
                 val text = commData.cmdParDic[CmdPar.text]
@@ -415,3 +443,9 @@ data class FileTransInfo(
     val file: String,
     val totalLong: Long
 )
+
+enum class InitDataTask {
+    NONE,
+    Text,
+    File
+}

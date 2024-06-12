@@ -94,6 +94,44 @@ class DroidFolderComm(
         Log.d(tAG, text)
         return request(commData)
     }
+    suspend fun sendFile(file: String): CommResult
+    {
+        val fileLength = File(file).length()
+
+        val cmdParDic = mutableMapOf<CmdPar, String>()
+        cmdParDic[CmdPar.targetFile] = File(file).getName()
+        cmdParDic[CmdPar.fileLength] = fileLength.toString()
+
+        val commData = CommData(DroidFolderCmd.SendFile, cmdParDic)
+        val commResult = request(commData)
+
+        //start send file
+        //workScope.launch {
+        fileTransEventHandler(
+            FileTransEventType.Start,
+            FileInOut.Out,
+            file,
+            fileLength,
+            0
+        )
+
+            myXyUdpComm.sendStream(
+                file,
+                fileLength,
+                commResult.resultDataDic[CmdPar.streamReceiverPar]!!
+            )
+
+        fileTransEventHandler(
+            FileTransEventType.End,
+            FileInOut.Out,
+            file,
+            0,
+            0
+        )
+        //}
+
+        return commResult
+    }
 
     private fun xyCommRequestHandler(receivedString: String): String{
         val commData = CommData.fromCommPkgString(receivedString)

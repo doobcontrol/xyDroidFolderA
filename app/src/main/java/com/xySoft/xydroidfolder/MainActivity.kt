@@ -24,11 +24,13 @@ import androidx.core.content.ContextCompat
 import com.xySoft.xydroidfolder.ui.MainScreen
 import com.xySoft.xydroidfolder.ui.theme.XyDroidFolderATheme
 
+
 class MainActivity : ComponentActivity() {
     private val tAG: String = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(tAG, "onCreate")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { //Android 13 sdk 33
             pushNotificationPermissionLauncher.launch(permission.POST_NOTIFICATIONS)
@@ -37,20 +39,11 @@ class MainActivity : ComponentActivity() {
             requestForStoragePermissions()
         }
 
-        var sharedText: String? = null
-        if(intent?.action == Intent.ACTION_SEND) {
-            if (intent.type?.startsWith("text/") == true) {
-                sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-                Log.d(tAG, "Shared text from intent: $sharedText")
-            }
-        }
-
         enableEdgeToEdge()
         setContent {
             XyDroidFolderATheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
-                        sharedText = sharedText,
                         startFileService = { startFileService(it) },
                         pasteToPc = ::pasteToPc,
                         modifier = Modifier.padding(innerPadding)
@@ -113,6 +106,7 @@ class MainActivity : ComponentActivity() {
     ) { //granted ->
 
     }
+
     private fun startFileService(pcAddress: String){
         val intent = Intent(this, XyFileService::class.java)
         intent.putExtra(XyFileService.PC_ADDRESS, pcAddress)
