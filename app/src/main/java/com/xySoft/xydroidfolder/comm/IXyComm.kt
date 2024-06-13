@@ -1,5 +1,7 @@
 package com.xySoft.xydroidfolder.comm
 
+import java.io.InputStream
+
 interface IXyComm {
     fun startListen()
     suspend fun sendForResponse(sendData: String):String
@@ -10,7 +12,7 @@ interface IXyComm {
         streamReceiverPar: String
         )
     suspend fun sendStream(
-        file: String,
+        fileStream: InputStream,
         fileLength: Long,
         streamReceiverPar: String
     )

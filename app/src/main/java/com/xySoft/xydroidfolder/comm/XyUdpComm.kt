@@ -7,6 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.InputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
@@ -121,7 +122,7 @@ class XyUdpComm(
 
         //clean wait socket for response if any
         socketList.forEach {
-            it.close()
+            it?.close()
         }
         socketList.clear()
     }
@@ -267,7 +268,7 @@ class XyUdpComm(
     }
 
     override suspend fun sendStream(
-        file: String,
+        fileStream: InputStream,
         fileLength: Long,
         streamReceiverPar: String)
     {
@@ -286,7 +287,6 @@ class XyUdpComm(
             var numBytes: Int
 
             var receivedSentBytes: Long = 0
-            val fileStream = File(file).inputStream()
 
             var isReadFinish = false
             var sendNumber: Long = 0

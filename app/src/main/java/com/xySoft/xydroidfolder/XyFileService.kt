@@ -6,15 +6,22 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.res.AssetFileDescriptor
+import android.database.Cursor
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Message
+import android.os.ParcelFileDescriptor
+import android.os.Parcelable
 import android.os.Process
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.xySoft.xydroidfolder.comm.CmdPar
@@ -32,19 +39,223 @@ import kotlinx.coroutines.launch
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.SocketException
+import java.util.UUID
 
 class XyFileService : Service()  {
-    val tAG: String = "XyFileService"
 
     private val job = SupervisorJob()
     private val receiveScope = CoroutineScope(Dispatchers.IO + job)
 
     companion object {
+        const val tAG: String = "XyFileService"
         var instance: XyFileService? = null
         const val PC_ADDRESS = "pcAddress"
 
-        var initDataTask: String? = InitDataTask.NONE.toString()
-        var initTaskPars: String? = null
+        fun sharedDataTask(intent: Intent){
+            var dataTask: String? = InitDataTask.NONE.toString()
+            var daskPars: String? = null
+
+            if (intent.type?.startsWith("text/") == true) {
+                //sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                //Log.d(tAG, "Shared text from intent: $sharedText")
+                dataTask = InitDataTask.Text.toString()
+                daskPars = intent.getStringExtra(Intent.EXTRA_TEXT)
+            }
+            else {
+                var uri: Uri? = null
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { //Android 13 sdk 33
+                    (intent.getParcelableExtra(
+                        Intent.EXTRA_STREAM, Parcelable::class.java) as? Uri)?.let {
+                        // Update UI to reflect image being shared
+                        uri = it
+                    }
+                }
+                else {
+                    (intent.getParcelableExtra<Parcelable>(
+                        Intent.EXTRA_STREAM) as? Uri)?.let {
+                        // Update UI to reflect image being shared
+                        uri = it
+                    }
+                }
+                if(uri != null){
+                    dataTask = InitDataTask.File.toString()
+                    daskPars = uri.toString()
+                }
+            }
+            if(dataTask != InitDataTask.NONE.toString()){
+                CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+//                    var tryTimes = 0  //when user not connect to pc, the permission still not granted
+//                    while(!ServiceState.value.isRunning){
+//                        delay(1000)
+//                        tryTimes++
+//                        if(tryTimes > 20){
+//                            //if user not connect to pc in 20s, cancel share task
+//                            break
+//                        }
+//                    }
+                    if(ServiceState.value.isRunning){
+                        when (dataTask) {
+                            InitDataTask.Text.toString() -> {
+                                sendText(daskPars!!)
+                            }
+
+                            InitDataTask.File.toString() -> {
+                                sendFile(Uri.parse(daskPars)!!)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //get file size
+        //code is copy from https://stackoverflow.com/questions/49415012/get-file-size-using-uri-in-android
+        private fun Uri.length(context: Context): Long {
+            val fromContentProviderColumn = fun(): Long {
+                // Try to get content length from the content provider column OpenableColumns.SIZE
+                // which is recommended to implement by all the content providers
+                var cursor: Cursor? = null
+                return try {
+                    cursor = context.contentResolver.query(
+                        this,
+                        arrayOf(OpenableColumns.SIZE),
+                        null,
+                        null,
+                        null
+                    ) ?: throw Exception("Content provider returned null or crashed")
+                    val sizeColumnIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeColumnIndex != -1 && cursor.count > 0) {
+                        cursor.moveToFirst()
+                        cursor.getLong(sizeColumnIndex)
+                    } else {
+                        -1
+                    }
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    -1
+                } finally {
+                    cursor?.close()
+                }
+            }
+
+            val fromFileDescriptor = fun(): Long {
+                // Try to get content length from content scheme uri or file scheme uri
+                var fileDescriptor: ParcelFileDescriptor? = null
+                return try {
+                    fileDescriptor = context.contentResolver.openFileDescriptor(this, "r")
+                        ?: throw Exception("Content provider recently crashed")
+                    fileDescriptor.statSize
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    -1
+                } finally {
+                    fileDescriptor?.close()
+                }
+            }
+
+            val fromAssetFileDescriptor = fun(): Long {
+                // Try to get content length from content scheme uri, file scheme uri or android resource scheme uri
+                var assetFileDescriptor: AssetFileDescriptor? = null
+                return try {
+                    assetFileDescriptor = context.contentResolver.openAssetFileDescriptor(this, "r")
+                        ?: throw Exception("Content provider recently crashed")
+                    assetFileDescriptor.length
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    -1
+                } finally {
+                    assetFileDescriptor?.close()
+                }
+            }
+
+            return when (scheme) {
+                ContentResolver.SCHEME_FILE -> {
+                    fromFileDescriptor()
+                }
+                ContentResolver.SCHEME_CONTENT -> {
+                    val length = fromContentProviderColumn()
+                    if (length >= 0) {
+                        length
+                    } else {
+                        fromFileDescriptor()
+                    }
+                }
+                ContentResolver.SCHEME_ANDROID_RESOURCE -> {
+                    fromAssetFileDescriptor()
+                }
+                else -> {
+                    -1
+                }
+            }
+        }
+        private fun Uri.fileName(context: Context): String {
+            val fromContentProviderColumn = fun(): String {
+                // Try to get content length from the content provider column OpenableColumns.SIZE
+                // which is recommended to implement by all the content providers
+                var cursor: Cursor? = null
+                return try {
+                    cursor = context.contentResolver.query(
+                        this,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null
+                    ) ?: throw Exception("Content provider returned null or crashed")
+                    val nameColumnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameColumnIndex != -1 && cursor.count > 0) {
+                        cursor.moveToFirst()
+                        cursor.getString(nameColumnIndex)
+                    } else {
+                        ""
+                    }
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    ""
+                } finally {
+                    cursor?.close()
+                }
+            }
+
+            val fromFileDescriptor = fun(): String {
+                // Try to get content length from content scheme uri or file scheme uri
+                return try {
+                    this.toString().split("/").last()
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    ""
+                }
+            }
+
+            val fromAssetFileDescriptor = fun(): String {
+                // Try to get content length from content scheme uri, file scheme uri or android resource scheme uri
+                return try {
+                    this.toString().split("/").last()
+                } catch (e: Exception) {
+                    Log.d(tAG, e.message ?: e.javaClass.simpleName)
+                    ""
+                }
+            }
+
+            return when (scheme) {
+                ContentResolver.SCHEME_FILE -> {
+                    fromFileDescriptor()
+                }
+                ContentResolver.SCHEME_CONTENT -> {
+                    val fName = fromContentProviderColumn()
+                    if (fName != "") {
+                        fName
+                    } else {
+                        fromFileDescriptor()
+                    }
+                }
+                ContentResolver.SCHEME_ANDROID_RESOURCE -> {
+                    fromAssetFileDescriptor()
+                }
+                else -> {
+                    ""
+                }
+            }
+        }
 
         private var droidFolderComm: DroidFolderComm? = null
 
@@ -93,11 +304,22 @@ class XyFileService : Service()  {
             }
         }
 
-        fun sendFile(file: String) {
+        private fun sendFile(file: Uri) {
             CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
                 try{
-                    droidFolderComm?.sendFile(file)
-                    addStateMessage(instance!!.getString(R.string.send_succeed))
+                    val inputStream = instance!!.contentResolver.openInputStream(file)
+                    if(inputStream == null){
+                        throw Exception("inputStream is null")
+                    }
+                    else{
+                        val size = file.length(instance!!)
+                        var fileName = file.fileName(instance!!)
+                        if(fileName.isEmpty() || fileName==""){
+                            fileName= UUID.randomUUID().toString()
+                        }
+                        droidFolderComm?.sendFile(inputStream, fileName, size)
+                        addStateMessage(instance!!.getString(R.string.send_succeed))
+                    }
                 }catch (e: Exception){
                     addStateMessage(instance!!.getString(R.string.send_failed, e.message))
                 }
@@ -166,20 +388,6 @@ class XyFileService : Service()  {
                                 setTargetPC(targetAddress)
                                 changeRunningState(true)
                                 setConnectError(null)
-
-                                //do init task
-                                Log.d(tAG, "do init task")
-                                when(initDataTask){
-                                    InitDataTask.Text.toString() -> {
-                                        Log.d(tAG, "sendText(initTaskPars!!)")
-                                        sendText(initTaskPars!!)
-                                    }
-                                    InitDataTask.File.toString() -> {
-                                        Log.d(tAG, "sendFile(initTaskPars!!)")
-                                        sendFile(initTaskPars!!)
-                                    }
-                                }
-
                             }catch (e: Exception){
                                 Log.d(tAG, "Exception: "
                                         + e.message)

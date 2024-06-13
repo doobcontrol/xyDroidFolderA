@@ -5,6 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.InputStream
 
 class DroidFolderComm(
     localIp: String, localPort: Int,
@@ -94,12 +95,15 @@ class DroidFolderComm(
         Log.d(tAG, text)
         return request(commData)
     }
-    suspend fun sendFile(file: String): CommResult
+    suspend fun sendFile(
+        inputStream: InputStream,
+        fileName: String,
+        fileLength: Long
+    ): CommResult
     {
-        val fileLength = File(file).length()
 
         val cmdParDic = mutableMapOf<CmdPar, String>()
-        cmdParDic[CmdPar.targetFile] = File(file).getName()
+        cmdParDic[CmdPar.targetFile] = fileName
         cmdParDic[CmdPar.fileLength] = fileLength.toString()
 
         val commData = CommData(DroidFolderCmd.SendFile, cmdParDic)
@@ -110,21 +114,21 @@ class DroidFolderComm(
         fileTransEventHandler(
             FileTransEventType.Start,
             FileInOut.Out,
-            file,
+            fileName,
             fileLength,
             0
         )
 
-            myXyUdpComm.sendStream(
-                file,
-                fileLength,
-                commResult.resultDataDic[CmdPar.streamReceiverPar]!!
-            )
+        myXyUdpComm.sendStream(
+            inputStream,
+            fileLength,
+            commResult.resultDataDic[CmdPar.streamReceiverPar]!!
+        )
 
         fileTransEventHandler(
             FileTransEventType.End,
             FileInOut.Out,
-            file,
+            fileName,
             0,
             0
         )
@@ -200,8 +204,9 @@ class DroidFolderComm(
                         0
                     )
 
+                    val fileObj = File(fileName)
                     myXyUdpComm.sendStream(
-                        fileName,
+                        fileObj.inputStream(),
                         fileLength,
                         commData.cmdParDic[CmdPar.streamReceiverPar]!!)
 
