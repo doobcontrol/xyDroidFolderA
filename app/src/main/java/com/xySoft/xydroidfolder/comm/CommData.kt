@@ -21,7 +21,7 @@ class CommData(
                 if(key == CmdPar.cmd.name) cmd = DroidFolderCmd.valueOf(value)
                 else if(key == CmdPar.cmdID.name) cmdID = value
                 else{
-                    cmdParDic[CmdPar.valueOf(key)] = value
+                    cmdParDic[CmdPar.valueOf(key)] = CommStringEncode.decodeParString(value)
                 }
             }
 
@@ -45,7 +45,7 @@ class CommData(
             {
                 pkgString.append(",")
             }
-            pkgString.append("${k.name}=$v")
+            pkgString.append("${k.name}=${CommStringEncode.encodeParString(v)}")
         }
         return pkgString.toString()
     }

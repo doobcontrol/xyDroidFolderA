@@ -20,36 +20,6 @@ class DroidFolderComm(
 
     private val myXyUdpComm: IXyComm
 
-    companion object {
-        private val encodeDic: MutableMap<String, String> = mutableMapOf(
-            Pair(",", "xyCommA"),
-            Pair("=", "xyEquaL"),
-        )
-        private val decodeDic : MutableMap<String, String> = mutableMapOf(
-            Pair("xyCommA", ","),
-            Pair("xyEquaL", "="),
-        )
-
-        fun encodeParString(parString: String): String
-        {
-            return stringReplace(parString, encodeDic)
-        }
-        fun decodeParString(parString: String): String
-        {
-            return stringReplace(parString, decodeDic)
-        }
-        private fun stringReplace(rString: String,
-                                  rDic: MutableMap<String, String>): String
-        {
-            var retString = rString
-
-            rDic.forEach {
-                retString = retString.replace(it.key, it.value)
-            }
-            return retString
-        }
-    }
-
     init {
         myXyUdpComm = XyUdpComm(
             localIp, localPort,
@@ -91,7 +61,7 @@ class DroidFolderComm(
     suspend fun sendText(text: String): CommResult
     {
         val cmdParDic = mutableMapOf<CmdPar, String>()
-        cmdParDic[CmdPar.text] = encodeParString(text)
+        cmdParDic[CmdPar.text] = text
 
         val commData = CommData(DroidFolderCmd.SendText, cmdParDic = cmdParDic)
         Log.d(tAG, text)
@@ -153,7 +123,7 @@ class DroidFolderComm(
 
         if(commData.cmdParDic.containsKey(CmdPar.text)){
             commData.cmdParDic[CmdPar.text] =
-                decodeParString(commData.cmdParDic[CmdPar.text]!!)
+                commData.cmdParDic[CmdPar.text]!!
         }
         xyCommRequestHandler(commData, commResult)
 
@@ -282,7 +252,7 @@ class DroidFolderComm(
             if(filesStr.isNotEmpty()){
                 filesStr.append("|")
             }
-            filesStr.append(encodeParString(file.name))
+            filesStr.append(file.name)
         }
         commResult.resultDataDic[CmdPar.files] = filesStr.toString()
 
@@ -293,7 +263,7 @@ class DroidFolderComm(
             if(foldersStr.isNotEmpty()){
                 foldersStr.append("|")
             }
-            foldersStr.append(encodeParString(folder.name))
+            foldersStr.append(folder.name)
         }
         commResult.resultDataDic[CmdPar.folders] = foldersStr.toString()
     }

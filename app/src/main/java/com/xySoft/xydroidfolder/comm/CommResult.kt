@@ -30,7 +30,7 @@ class CommResult(
                     }
                     CmdPar.cmdSucceed.name -> cmdSucceed = value.toBoolean()
                     else -> {
-                        resultDataDic[CmdPar.valueOf(key)] = value
+                        resultDataDic[CmdPar.valueOf(key)] = CommStringEncode.decodeParString(value)
                     }
                 }
             }
@@ -56,7 +56,7 @@ class CommResult(
             {
                 pkgString.append(",")
             }
-            pkgString.append("${k.name}=$v")
+            pkgString.append("${k.name}=${CommStringEncode.encodeParString(v)}")
         }
         return pkgString.toString()
     }
