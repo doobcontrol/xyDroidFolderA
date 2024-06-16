@@ -188,7 +188,7 @@ fun MainScreenStateless(
                     val progress = mainScreenState.fileProgress.toFloat() /
                             mainScreenState.fileTransInfo!!.totalLong
                     val percentage =  DecimalFormat("00.00").format(progress * 100)
-                    Text("$percentage(${mainScreenState.fileProgress} " +
+                    Text("${percentage}%(${mainScreenState.fileProgress} " +
                             "/ ${mainScreenState.fileTransInfo.totalLong})")
                     LinearProgressIndicator(
                         progress = progress,
