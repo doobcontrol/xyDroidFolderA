@@ -3,9 +3,11 @@ package com.xySoft.xydroidfolder.comm
 import android.os.Environment
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
+
 
 class DroidFolderComm(
     localIp: String, localPort: Int,
@@ -82,7 +84,7 @@ class DroidFolderComm(
         cmdParDic[CmdPar.port] = port.toString()
         cmdParDic[CmdPar.hostName] = hostName
 
-        val commData = CommData(DroidFolderCmd.Register, cmdParDic)
+        val commData = CommData(DroidFolderCmd.Register, cmdParDic = cmdParDic)
 
         return request(commData)
     }
@@ -91,10 +93,12 @@ class DroidFolderComm(
         val cmdParDic = mutableMapOf<CmdPar, String>()
         cmdParDic[CmdPar.text] = encodeParString(text)
 
-        val commData = CommData(DroidFolderCmd.SendText, cmdParDic)
+        val commData = CommData(DroidFolderCmd.SendText, cmdParDic = cmdParDic)
         Log.d(tAG, text)
         return request(commData)
     }
+
+    val sendStreamJobMap = mutableMapOf<String, Job>()
     suspend fun sendFile(
         inputStream: InputStream,
         fileName: String,
@@ -106,7 +110,7 @@ class DroidFolderComm(
         cmdParDic[CmdPar.targetFile] = fileName
         cmdParDic[CmdPar.fileLength] = fileLength.toString()
 
-        val commData = CommData(DroidFolderCmd.SendFile, cmdParDic)
+        val commData = CommData(DroidFolderCmd.SendFile, cmdParDic = cmdParDic)
         val commResult = request(commData)
 
         //start send file
@@ -118,12 +122,18 @@ class DroidFolderComm(
             fileLength,
             0
         )
-
-        myXyUdpComm.sendStream(
-            inputStream,
-            fileLength,
-            commResult.resultDataDic[CmdPar.streamReceiverPar]!!
-        )
+        val job = workScope.launch {
+            myXyUdpComm.sendStream(
+                inputStream,
+                fileLength,
+                commResult.resultDataDic[CmdPar.streamReceiverPar]!!
+            )
+        }
+        sendStreamJobMap[commData.cmdID] = job
+        job.join()
+        if(sendStreamJobMap.containsKey(commData.cmdID)){
+            sendStreamJobMap.remove(commData.cmdID)
+        }
 
         fileTransEventHandler(
             FileTransEventType.End,
@@ -179,6 +189,7 @@ class DroidFolderComm(
                         fileName,
                         commData.cmdParDic[CmdPar.fileLength]!!.toLong(),
                         commResult.resultDataDic[CmdPar.streamReceiverPar]!!)
+                    confirmReceiveFileSucceed(commData.cmdID)
 
                     fileTransEventHandler(
                         FileTransEventType.End,
@@ -205,10 +216,18 @@ class DroidFolderComm(
                     )
 
                     val fileObj = File(fileName)
-                    myXyUdpComm.sendStream(
-                        fileObj.inputStream(),
-                        fileLength,
-                        commData.cmdParDic[CmdPar.streamReceiverPar]!!)
+                    val job = workScope.launch {
+                        myXyUdpComm.sendStream(
+                            fileObj.inputStream(),
+                            fileLength,
+                            commData.cmdParDic[CmdPar.streamReceiverPar]!!
+                        )
+                    }
+                    sendStreamJobMap[commData.cmdID] = job
+                    job.join()
+                    if(sendStreamJobMap.containsKey(commData.cmdID)){
+                        sendStreamJobMap.remove(commData.cmdID)
+                    }
 
                     fileTransEventHandler(
                         FileTransEventType.End,
@@ -222,10 +241,31 @@ class DroidFolderComm(
             DroidFolderCmd.SendText -> {
                 //
             }
+            DroidFolderCmd.SendFileSucceed -> {
+                val sendFileCmdID: String? =
+                    commData.cmdParDic[CmdPar.sendFileCmdID]
+                if(sendStreamJobMap.containsKey(sendFileCmdID)){
+                    sendStreamJobMap[sendFileCmdID]!!.cancel()
+                    sendStreamJobMap.remove(sendFileCmdID)
+                }
+            }
             else -> {}
         }
 
         return commResult.toCommPkgString()
+    }
+
+    private fun confirmReceiveFileSucceed(cmdID: String) {
+        val commData = CommData(DroidFolderCmd.SendFileSucceed)
+        commData.cmdParDic[CmdPar.sendFileCmdID] = cmdID
+
+        workScope.launch {
+            try {
+                request(commData)
+            } catch (e: Exception) {
+                Log.d(tAG, "confirmReceiveFileSucceed error: $e")
+            }
+        }
     }
 
     private fun getFolderContent(commResult: CommResult, folderName: String){
@@ -276,11 +316,13 @@ enum class DroidFolderCmd {
     GetFolder,
     GetFile,
     SendFile,
+    SendFileSucceed,
     SendText
 }
 enum class CmdPar {
     cmd,
     cmdID,
+    sendFileCmdID,
     cmdSucceed,
     ip,
     port,

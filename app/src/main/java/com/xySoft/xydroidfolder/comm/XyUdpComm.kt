@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -291,7 +292,7 @@ class XyUdpComm(
             var isReadFinish = false
             var sendNumber: Long = 0
 
-            while (true) {
+            while (isActive) {
                 if (!isReadFinish) {
                     if (sendTaskDataList.count() <= maxBufferTaskCount)
                     {
@@ -328,7 +329,7 @@ class XyUdpComm(
 
                     val tempJob = workScope.launch {
                         var sendSucceed = false
-                        while (!sendSucceed)
+                        while (!sendSucceed && isActive)
                         {
                             try
                             {
