@@ -282,7 +282,7 @@ class DroidFolderComm(
             if(filesStr.isNotEmpty()){
                 filesStr.append("|")
             }
-            filesStr.append(file.name)
+            filesStr.append(encodeParString(file.name))
         }
         commResult.resultDataDic[CmdPar.files] = filesStr.toString()
 
@@ -293,7 +293,7 @@ class DroidFolderComm(
             if(foldersStr.isNotEmpty()){
                 foldersStr.append("|")
             }
-            foldersStr.append(folder.name)
+            foldersStr.append(encodeParString(folder.name))
         }
         commResult.resultDataDic[CmdPar.folders] = foldersStr.toString()
     }
