@@ -53,13 +53,13 @@ class XyFileService : Service()  {
 
         fun sharedDataTask(intent: Intent){
             var dataTask: String? = InitDataTask.NONE.toString()
-            var daskPars: String? = null
+            var taskPars: String? = null
 
             if (intent.type?.startsWith("text/") == true) {
                 //sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                 //Log.d(tAG, "Shared text from intent: $sharedText")
                 dataTask = InitDataTask.Text.toString()
-                daskPars = intent.getStringExtra(Intent.EXTRA_TEXT)
+                taskPars = intent.getStringExtra(Intent.EXTRA_TEXT)
             }
             else {
                 var uri: Uri? = null
@@ -79,7 +79,7 @@ class XyFileService : Service()  {
                 }
                 if(uri != null){
                     dataTask = InitDataTask.File.toString()
-                    daskPars = uri.toString()
+                    taskPars = uri.toString()
                 }
             }
             if(dataTask != InitDataTask.NONE.toString()){
@@ -96,11 +96,11 @@ class XyFileService : Service()  {
                     if(ServiceState.value.isRunning){
                         when (dataTask) {
                             InitDataTask.Text.toString() -> {
-                                sendText(daskPars!!)
+                                sendText(taskPars!!)
                             }
 
                             InitDataTask.File.toString() -> {
-                                sendFile(Uri.parse(daskPars)!!)
+                                sendFile(Uri.parse(taskPars)!!)
                             }
                         }
                     }
