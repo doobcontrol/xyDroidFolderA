@@ -108,9 +108,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startFileService(pcAddress: String){
-        val intent = Intent(this, XyFileService::class.java)
+        val intent = Intent(applicationContext, XyFileService::class.java)
         intent.putExtra(XyFileService.PC_ADDRESS, pcAddress)
-        startService(Intent(intent))
+        startService(intent)
     }
     private fun pasteToPc() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

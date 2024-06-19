@@ -387,6 +387,7 @@ class XyFileService : Service()  {
                                         append(commResult.resultDataDic[CmdPar.returnMsg])
                                     }
                                 )
+
                                 setTargetPC(targetAddress)
                                 changeRunningState(true)
                                 setConnectError(null)
@@ -402,7 +403,11 @@ class XyFileService : Service()  {
                 }
             } catch (e: InterruptedException) {
                 // Restore interrupt status.
+                Log.d(tAG, "handleMessage error InterruptedException: " + e.message)
                 Thread.currentThread().interrupt()
+            }
+            catch (e: Exception){
+                Log.d(tAG, "handleMessage error Exception: " + e.message)
             }
 
             // Stop the service using the startId, so that we don't stop
@@ -424,6 +429,7 @@ class XyFileService : Service()  {
             serviceHandler = ServiceHandler(looper)
         }
         instance = this
+        Log.d(tAG, "Service: onCreate()")
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -437,16 +443,19 @@ class XyFileService : Service()  {
             serviceHandler?.sendMessage(msg)
         }
 
+        Log.d(tAG, "Service: onStartCommand()")
         // If we get killed, after returning from here, restart
         return START_STICKY
     }
 
     override fun onBind(intent: Intent): IBinder? {
         // We don't provide binding, so return null
+        Log.d(tAG, "Service: onBind()")
         return null
     }
 
     override fun onDestroy() {
+        Log.d(tAG, "Service: onDestroy()")
         instance = null
     }
 
@@ -620,7 +629,10 @@ class XyFileService : Service()  {
         mNotificationBuilder!!
             .setTicker(message)
             .setContentText(message)
-        mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
+        //mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
+
+        //this keep the service alive
+        startForeground(2001, mNotificationBuilder!!.build());
     }
 
     private fun createNotificationChannel(){
