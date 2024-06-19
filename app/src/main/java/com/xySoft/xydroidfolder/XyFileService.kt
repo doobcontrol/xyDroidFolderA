@@ -9,7 +9,6 @@ import android.content.ClipboardManager
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.net.Uri
@@ -634,8 +633,8 @@ class XyFileService : Service()  {
 
         //this keep the service alive
         startForeground(
-            FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
-            mNotificationBuilder!!.build());
+            16, //FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            mNotificationBuilder!!.build())
     }
 
     private fun createNotificationChannel(){
