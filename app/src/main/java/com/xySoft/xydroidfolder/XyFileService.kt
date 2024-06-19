@@ -55,11 +55,11 @@ class XyFileService : Service()  {
             var dataTask: String? = InitDataTask.NONE.toString()
             var taskPars: String? = null
 
+            Log.d(tAG, "Shared intent.type: ${intent.type}")
             if (intent.type?.startsWith("text/") == true) {
-                //sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-                //Log.d(tAG, "Shared text from intent: $sharedText")
                 dataTask = InitDataTask.Text.toString()
                 taskPars = intent.getStringExtra(Intent.EXTRA_TEXT)
+                Log.d(tAG, "Shared text from intent: $taskPars")
             }
             else {
                 var uri: Uri? = null
@@ -321,7 +321,9 @@ class XyFileService : Service()  {
                         addStateMessage(instance!!.getString(R.string.send_succeed))
                     }
                 }catch (e: Exception){
-                    addStateMessage(instance!!.getString(R.string.send_failed, e.message))
+                    //addStateMessage(instance!!.getString(R.string.send_failed, e.message))
+                    addStateMessage("send_failed: " + e.message)
+                    Log.d(tAG, "send_failed: " + e.stackTraceToString())
                 }
             }
         }

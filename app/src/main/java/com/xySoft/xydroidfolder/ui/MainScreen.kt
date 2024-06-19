@@ -4,6 +4,7 @@ import android.net.InetAddresses
 import android.os.Build
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,13 +32,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.xySoft.xydroidfolder.FileTransInfo
 import com.xySoft.xydroidfolder.R
 import com.xySoft.xydroidfolder.ui.theme.XyDroidFolderATheme
-import io.github.g00fy2.quickie.QRResult
-import io.github.g00fy2.quickie.ScanCustomCode
-import io.github.g00fy2.quickie.config.ScannerConfig
 import java.text.DecimalFormat
+
 
 @Composable
 fun MainScreen(
@@ -58,63 +59,54 @@ fun MainScreen(
     if(!mainScreenState.connectError.isNullOrBlank()){
         connectErrorInfo = mainScreenState.connectError!!
     }
-    val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanCustomCode())
-    { result ->
-        // handle QRResult
-        when(result){
-            is QRResult.QRSuccess -> {
-                val scanQrCodeInfo = result.content.rawValue
-                var isValidIpaddress = false
-                if(!scanQrCodeInfo.isNullOrEmpty()) {
-                    val ipInfoList = scanQrCodeInfo.split(":")
-                    if (ipInfoList.size >= 2) {
-                        if (Build.VERSION.SDK_INT >= 29) {
-                            if (InetAddresses.isNumericAddress(ipInfoList[0])) {
-                                isValidIpaddress = true
-                            }
+
+    // Register the launcher and result handler
+    val barcodeLauncher: ActivityResultLauncher<ScanOptions> = rememberLauncherForActivityResult(
+        ScanContract()
+    ) { result ->
+        if (result.contents == null) {
+            connectErrorInfo = "Cancelled"
+        } else {
+            val scanQrCodeInfo = result.contents
+            var isValidIpaddress = false
+            if(!scanQrCodeInfo.isNullOrEmpty()) {
+                val ipInfoList = scanQrCodeInfo.split(":")
+                if (ipInfoList.size >= 2) {
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        if (InetAddresses.isNumericAddress(ipInfoList[0])) {
+                            isValidIpaddress = true
                         }
-                        else {
-                            if (Patterns.IP_ADDRESS.matcher(ipInfoList[0]).matches()) {
-                                isValidIpaddress = true
-                            }
+                    }
+                    else {
+                        if (Patterns.IP_ADDRESS.matcher(ipInfoList[0]).matches()) {
+                            isValidIpaddress = true
                         }
-                        if (isValidIpaddress) {
-                            var portValid = false
-                            if(ipInfoList[1].toIntOrNull() != null
-                                && ipInfoList[1].toInt() in 0..65535){
-                                portValid = true
-                            }
-                            if(!portValid){
-                                isValidIpaddress = false
-                            }
+                    }
+                    if (isValidIpaddress) {
+                        var portValid = false
+                        if(ipInfoList[1].toIntOrNull() != null
+                            && ipInfoList[1].toInt() in 0..65535){
+                            portValid = true
+                        }
+                        if(!portValid){
+                            isValidIpaddress = false
                         }
                     }
                 }
+            }
 
-                if(isValidIpaddress){
-                    connectErrorInfo = ""
-                    scanQrCodeInfo?.let { startFileService(it) }
-                }
-                else{
-                    connectErrorInfo = "Invalid IP address: $scanQrCodeInfo"
-                }
+            if(isValidIpaddress){
+                connectErrorInfo = ""
+                scanQrCodeInfo?.let { startFileService(it) }
             }
-            is QRResult.QRUserCanceled -> {
-                // User canceled
-            }
-            is QRResult.QRMissingPermission  -> {
-                connectErrorInfo = "QRMissingPermission"
-            }
-            is QRResult.QRError -> {
-                connectErrorInfo = "QRError"
+            else{
+                connectErrorInfo = "Invalid IP address: $scanQrCodeInfo"
             }
         }
     }
 
-    val barCodeButtonClick: () -> Unit = { scanQrCodeLauncher.launch(
-        ScannerConfig.build {
-            setOverlayStringRes(R.string.scan_barcode) // string resource used for the scanner overlay
-        })
+    val barCodeButtonClick: () -> Unit = {
+        barcodeLauncher.launch(ScanOptions())
     }
 
     MainScreenStateless(
