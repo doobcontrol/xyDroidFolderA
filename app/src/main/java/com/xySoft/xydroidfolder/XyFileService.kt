@@ -612,14 +612,14 @@ class XyFileService : Service()  {
         mNotificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
 
         mNotificationBuilder!!
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.taskbaricon)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentTitle("Connect to PC")
             .setWhen(System.currentTimeMillis())
             .setContentIntent(pendingIntent)
             .addAction(
-                R.drawable.ic_launcher_foreground,
+                R.drawable.taskbaricon,
                 "Stop", pendingCloseIntent
             )
             .setOngoing(true)
