@@ -287,10 +287,10 @@ class XyFileService : Service()  {
         fun stopService(){
             droidFolderComm?.clean()
             droidFolderComm = null
-            cancelNotification()
             changeRunningState(false)
             setConnectError(instance!!.getString(R.string.disconnected))
             ServiceState.value.messages.clear()
+            instance?.stopSelf()
         }
 
         fun sendText(text: String) {
@@ -327,15 +327,6 @@ class XyFileService : Service()  {
                 }
             }
         }
-
-        //region: Persistent service icon in notification bar
-
-        private const val NOTIFICATION: Int = 1
-        private var mNotificationManager: NotificationManager? = null
-        private fun cancelNotification() {
-            mNotificationManager?.cancel(NOTIFICATION)
-        }
-        //endregion
     }
 
     private var serviceLooper: Looper? = null
@@ -590,10 +581,7 @@ class XyFileService : Service()  {
     private val CHANNEL_ID: String = "my_channel_id_01"
 
     private var mNotificationBuilder: NotificationCompat.Builder? = null
-    private fun setupNotifications() { //called in onCreate()
-        if (mNotificationManager == null) {
-            mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        }
+    private fun setupNotifications() {
         val pendingIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java)
@@ -629,7 +617,6 @@ class XyFileService : Service()  {
         mNotificationBuilder!!
             .setTicker(message)
             .setContentText(message)
-        //mNotificationManager?.notify(NOTIFICATION, mNotificationBuilder!!.build())
 
         //this keep the service alive
         startForeground(
