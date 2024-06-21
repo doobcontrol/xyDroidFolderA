@@ -425,24 +425,21 @@ class XyFileService : Service()  {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         //Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show()
-        if (intent != null) {
-            val action = intent.action
-            if (action != null) {
-                when (action) {
-                    CLOSE_ACTION -> {
-                        stopService()
-                        Log.d(tAG, "close from notification")
-                    }
+        val action = intent.action
+        if (action != null) {
+            when (action) {
+                CLOSE_ACTION -> {
+                    stopService()
                 }
             }
-            else{
-                // For each start request, send a message to start a job and deliver the
-                // start ID so we know which request we're stopping when we finish the job
-                serviceHandler?.obtainMessage()?.also { msg ->
-                    msg.arg1 = startId
-                    msg.obj = intent
-                    serviceHandler?.sendMessage(msg)
-                }
+        }
+        else{
+            // For each start request, send a message to start a job and deliver the
+            // start ID so we know which request we're stopping when we finish the job
+            serviceHandler?.obtainMessage()?.also { msg ->
+                msg.arg1 = startId
+                msg.obj = intent
+                serviceHandler?.sendMessage(msg)
             }
         }
 
