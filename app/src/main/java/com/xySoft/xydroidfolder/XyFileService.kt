@@ -425,13 +425,25 @@ class XyFileService : Service()  {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         //Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show()
-
-        // For each start request, send a message to start a job and deliver the
-        // start ID so we know which request we're stopping when we finish the job
-        serviceHandler?.obtainMessage()?.also { msg ->
-            msg.arg1 = startId
-            msg.obj = intent
-            serviceHandler?.sendMessage(msg)
+        if (intent != null) {
+            val action = intent.action
+            if (action != null) {
+                when (action) {
+                    CLOSE_ACTION -> {
+                        stopService()
+                        Log.d(tAG, "close from notification")
+                    }
+                }
+            }
+            else{
+                // For each start request, send a message to start a job and deliver the
+                // start ID so we know which request we're stopping when we finish the job
+                serviceHandler?.obtainMessage()?.also { msg ->
+                    msg.arg1 = startId
+                    msg.obj = intent
+                    serviceHandler?.sendMessage(msg)
+                }
+            }
         }
 
         Log.d(tAG, "Service: onStartCommand()")
@@ -577,7 +589,7 @@ class XyFileService : Service()  {
     }
 
     //region: Persistent service icon in notification bar
-    private val CLOSE_ACTION: String = "close"
+    private val CLOSE_ACTION: String = "CLOSE_ACTION"
     private val CHANNEL_ID: String = "my_channel_id_01"
 
     private var mNotificationBuilder: NotificationCompat.Builder? = null
@@ -588,10 +600,9 @@ class XyFileService : Service()  {
                 .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE
         )
-        val pendingCloseIntent = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, MainActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val pendingCloseIntent = PendingIntent.getService(
+            this, 1,
+            Intent(this, XyFileService::class.java)
                 .setAction(CLOSE_ACTION),
             PendingIntent.FLAG_IMMUTABLE
         )
@@ -603,12 +614,12 @@ class XyFileService : Service()  {
             .setSmallIcon(R.drawable.taskbaricon)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentTitle("Connect to PC")
+            .setContentTitle(getString(R.string.connect_information))
             .setWhen(System.currentTimeMillis())
             .setContentIntent(pendingIntent)
             .addAction(
                 R.drawable.taskbaricon,
-                "Stop", pendingCloseIntent
+                getString(R.string.stopService), pendingCloseIntent
             )
             .setOngoing(true)
     }
@@ -626,8 +637,8 @@ class XyFileService : Service()  {
 
     private fun createNotificationChannel(){
         // Create the NotificationChannel.
-        val name = "myChannel"
-        val descriptionText = "myChannel descriptionText"
+        val name = getString(R.string.channel_name)
+        val descriptionText = getString(R.string.channel_description_text)
         val importance = NotificationManager.IMPORTANCE_DEFAULT
         val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
         mChannel.description = descriptionText

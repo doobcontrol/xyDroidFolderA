@@ -16,5 +16,8 @@
     <string name="send_succeed">Send share content succeed</string>
     <string name="send_failed">Send share content failed: %1$s</string>
     <string name="disconnected">Disconnected</string>
-    <string name="title_activity_send">SendActivity</string>
+    <string name="title_activity_send" translatable="false">SendActivity</string>
+    <string name="channel_name">Service indicator</string>
+    <string name="channel_description_text">Message about service</string>
+    <string name="connect_information">Connect information</string>
 </resources>
