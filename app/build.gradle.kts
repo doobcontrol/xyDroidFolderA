@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -27,6 +29,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        //change output apk file name
+        applicationVariants.all{
+            outputs.all {
+                if(name.contains("release"))
+                    (this as BaseVariantOutputImpl).outputFileName = "xydroidfolder(V${versionName}).apk"
+            }
         }
     }
     compileOptions {
